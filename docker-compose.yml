@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  php:
+    build: .
+    container_name: cogosmart_php
+    volumes:
+      - .:/var/www/html/new
+    working_dir: /var/www/html/new
+    ports:
+      - "9000:9000"
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: cogosmart_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cogosmart
+      MYSQL_USER: cogosmart
+      MYSQL_PASSWORD: cogosmart123
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+volumes:
+  mysql_data:
