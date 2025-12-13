@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Master;
+use App\Models\Master_db;
 use App\Models\User;
 use App\Services\Tenant_db;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class Register_cnt extends Controller
             'l_name' => 'required|string',
             'phone' => 'required|string|unique:users,phone',
             'otp' => 'required|string',
+
         ];
 
         $validator = Validator::make($request->all(), $rule);
@@ -48,9 +50,29 @@ class Register_cnt extends Controller
             $master->db_name = $db_name;
             $master->save();
 
+            $master_db = Master_db::create([
+                'db_name' => $db_name,
+                'f_id' => $master->id,
+
+            ]);
+
             try {
+
                 // Create tenant database connection
                 Tenant_db::create_tenant_db($master->db_name);
+
+                $user_create = User::create([
+                    'name' => $request->name,
+                    'l_name' => $request->l_name,
+                    'phone' => $request->phone,
+
+                ]);
+
+                $token = JWTAuth::claims([
+                    'db_name' => $master->db_name,
+                ])->fromUser($user_create);
+
+                Auth::guard('tenant')->setUser($user_create);
 
             } catch (\Exception $e) {
                 return response()->json([
@@ -62,13 +84,53 @@ class Register_cnt extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'User registered successfully',
-                'data' => $master,
+                'data' => $user_create,
+                'token' => $token,
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'User registration failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for update passowrd
+
+    public function update_password(Request $request)
+    {
+
+        $rule = [
+            'password' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+
+            $user = Auth::guard('tenant')->user(); // ✅ Works now
+
+            $user = User::where('id', $user->id)->update([
+                'password' => $request->password,
+            ]);
+            // $user->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Password updated successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Password update failed: '.$e->getMessage(),
             ], 500);
         }
     }

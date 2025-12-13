@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 // register
 Route::post('/register', [Register_cnt::class, 'register']);
+Route::post('/update_password', [Register_cnt::class, 'update_password'])->middleware('tenant.db');
 
 Route::post('/login', [Register_cnt::class, 'login']);
 

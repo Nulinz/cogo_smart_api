@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Symfony\Component\HttpFoundation\Response;
 
 class Dynamic_db
@@ -20,7 +21,13 @@ class Dynamic_db
         // Get database name from request
         // $db = $request->db_name;
 
-        $db = $request->header('X-Tenant');
+        $payload = JWTAuth::parseToken()->getPayload();
+
+        // $dbName = $payload->get('db_name');
+
+        $db = $payload->get('db_name');
+
+        // dd($db);
 
         if (! $db) {
             return response()->json(['error' => 'Missing database name'], 400);
