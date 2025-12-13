@@ -1,0 +1,128 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Product;
+use App\Services\Product_ser;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+
+class Product_cnt extends Controller
+{
+    public function create_product(Request $request)
+    {
+
+        $rule = [
+            'name_en' => 'required|string',
+            'name_kn' => 'required|string',
+            'type' => 'required|string',
+
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+
+            $product = Product_ser::create_product($request->all());
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Product created successfully',
+                'data' => $product,
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Product creation failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // edit the product name
+
+    public function edit_product(Request $request)
+    {
+        // Method implementation here
+        $rule = [
+            'product_id' => 'required|integer',
+            'name_en' => 'required|string',
+            'name_kn' => 'required|string',
+
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $product = Product_ser::edit_product($request->all());
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Product updated successfully',
+                'data' => $product,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Product update failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // active or deactivate product
+
+    public function active_product(Request $request)
+    {
+        // Method implementation here
+
+        $rule = [
+            'product_id' => 'required|string',
+            'status' => 'required|string',
+
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $product = Product::where('id', $request->product_id)->update(
+                [
+                    'status' => $request->status,
+                ]
+            );
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Product status updated successfully',
+                'data' => $product,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Product status update failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+}
