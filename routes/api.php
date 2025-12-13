@@ -4,7 +4,6 @@ use App\Http\Controllers\Farmer_cnt;
 use App\Http\Controllers\Party_cnt;
 use App\Http\Controllers\Product_cnt;
 use App\Http\Controllers\Register_cnt;
-use App\Http\Controllers\User_cnt;
 use Illuminate\Support\Facades\Route;
 
 // Route::post('/new', function () {
@@ -13,20 +12,15 @@ use Illuminate\Support\Facades\Route;
 
 // register
 Route::post('/register', [Register_cnt::class, 'register']);
-Route::post('/update_password', [Register_cnt::class, 'update_password'])->middleware('tenant.db');
+Route::post('/generate_otp', [Register_cnt::class, 'generate_otp']);
 
 Route::post('/login', [Register_cnt::class, 'login']);
 
 Route::post('/check_mobile_register', [Register_cnt::class, 'check_mobile']);
 
-// ->middleware('tenant.db');
-
-// Route::middleware(['api'])->group(function () {
-//     Route::get('/me', [User_cnt::class, 'me']);
-//     Route::post('/logout', [User_cnt::class, 'logout']);
-// });
-
 Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
+
+    Route::post('/update_password', [Register_cnt::class, 'update_password']);
 
     Route::post('/check_mobile', [Register_cnt::class, 'check_mobile']);
 

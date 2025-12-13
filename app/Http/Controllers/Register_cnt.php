@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Master;
 use App\Models\Master_db;
 use App\Models\User;
+use App\Services\Otp;
 use App\Services\Tenant_db;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,40 @@ use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class Register_cnt extends Controller
 {
+    // option to generate otp
+    public function generate_otp(Request $request)
+    {
+        $rule = [
+            'phone' => 'required|string',
+
+        ];
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $otp = rand(1000, 9999);
+
+            // app(Otp::class)->sendOtp($request->phone, $otp);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'OTP generated successfully',
+                'otp' => $otp,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'OTP generation failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function register(Request $request)
     {
         Tenant_db::main(); // switch to main DB
