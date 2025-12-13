@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class Register_cnt extends Controller
@@ -43,8 +44,20 @@ class Register_cnt extends Controller
                 'otp_verified' => 1,
             ]);
 
-            // Create tenant database and run migrations
-            // Tenant_db::create_tenant_db($master->db_name);
+            $db_name = 'cogo_smart_'.Str::substr($master->name, 0, 4).'_'.$master->id;
+            $master->db_name = $db_name;
+            $master->save();
+
+            try {
+                // Create tenant database connection
+                Tenant_db::create_tenant_db($master->db_name);
+
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Database connection failed: '.$e->getMessage(),
+                ], 500);
+            }
 
             return response()->json([
                 'status' => true,

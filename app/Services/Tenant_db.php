@@ -27,6 +27,13 @@ class Tenant_db
     {
         DB::statement("CREATE DATABASE IF NOT EXISTS {$dbName}");
 
+        // 2️⃣ Dynamically set tenant DB
+        config(['database.connections.tenant.database' => $dbName]);
+
+        // 3️⃣ Reset tenant connection
+        DB::purge('tenant');
+        DB::reconnect('tenant');
+
         Artisan::call('migrate', [
             '--database' => 'tenant',
             '--path' => '/database/migrations/tenant',

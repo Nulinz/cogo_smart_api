@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Route;
 //     return response()->json(['message' => 'API is working']);
 // });
 
+// register
+Route::post('/register', [Register_cnt::class, 'register']);
+
 Route::post('/login', [Register_cnt::class, 'login']);
 
 Route::post('/check_mobile_register', [Register_cnt::class, 'check_mobile']);
