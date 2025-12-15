@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Base_cnt;
 use App\Http\Controllers\Farmer_cnt;
 use App\Http\Controllers\Party_cnt;
 use App\Http\Controllers\Product_cnt;
@@ -34,6 +35,9 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/create_product', [Product_cnt::class, 'create_product']);
     Route::post('/edit_product', [Product_cnt::class, 'edit_product']);
     Route::post('/active_product', [Product_cnt::class, 'active_product']);
+
+      // mehtods for create quality, transport, truck
+    Route::post('/create_common', [Base_cnt::class, 'create_common']);
 
     Route::post('/me', [Register_cnt::class, 'me']);
     Route::post('/logout', [Register_cnt::class, 'logout']);
