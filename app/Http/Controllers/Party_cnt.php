@@ -38,7 +38,7 @@ class Party_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -48,14 +48,14 @@ class Party_cnt extends Controller
             $party = Party_ser::create_party($request->all());
 
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'message' => 'Party created/updated successfully',
                 'data' => $party,
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'message' => 'Party created/updated failed: '.$e->getMessage(),
             ], 500);
         }

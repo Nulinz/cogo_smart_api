@@ -23,7 +23,7 @@ class Product_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -33,14 +33,14 @@ class Product_cnt extends Controller
             $product = Product_ser::create_product($request->all());
 
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'message' => 'Product created successfully',
                 'data' => $product,
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'message' => 'Product creation failed: '.$e->getMessage(),
             ], 500);
         }
@@ -62,7 +62,7 @@ class Product_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -71,14 +71,14 @@ class Product_cnt extends Controller
             $product = Product_ser::edit_product($request->all());
 
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'message' => 'Product updated successfully',
                 'data' => $product,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'message' => 'Product update failed: '.$e->getMessage(),
             ], 500);
         }
@@ -100,7 +100,7 @@ class Product_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -113,14 +113,14 @@ class Product_cnt extends Controller
             );
 
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'message' => 'Product status updated successfully',
                 'data' => $product,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'message' => 'Product status update failed: '.$e->getMessage(),
             ], 500);
         }

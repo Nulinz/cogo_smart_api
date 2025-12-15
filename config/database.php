@@ -65,11 +65,11 @@ return [
 
         'tenant' => [
             'driver' => 'mysql',
-            'host' => env('DB_HOST', '127.0.0.1'),
+            'host' => env('DB_HOST', 'cogosmart-db.cjkwemokw0ru.ap-south-1.rds.amazonaws.com'),
             'port' => env('DB_PORT', '3306'),
             'database' => null,          // IMPORTANT
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
+            'username' => env('DB_USERNAME', 'cogosmart'),
+            'password' => env('DB_PASSWORD', 'cogosmart123'),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',

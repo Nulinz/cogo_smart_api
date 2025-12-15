@@ -19,7 +19,16 @@ class Tenant_db
     public static function main()
     {
         // Reconnect to default MySQL DB
-        DB::purge('mysql');
+        // DB::purge('mysql');
+        // DB::reconnect('mysql');
+
+        // Clean tenant connection
+        DB::purge('tenant');
+
+        // Reset default connection to main DB
+        DB::setDefaultConnection('mysql');
+
+        // Reconnect main DB
         DB::reconnect('mysql');
     }
 

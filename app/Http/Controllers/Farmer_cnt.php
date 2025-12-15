@@ -38,7 +38,7 @@ class Farmer_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -48,14 +48,14 @@ class Farmer_cnt extends Controller
             $farmer = Farmer_ser::create_farm($request->all());
 
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'message' => 'Farmer created/updated successfully',
                 'data' => $farmer,
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'message' => 'Farmer created/updated failed: '.$e->getMessage(),
             ], 500);
         }

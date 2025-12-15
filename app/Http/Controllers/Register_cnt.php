@@ -28,24 +28,24 @@ class Register_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
 
         try {
-            $otp = rand(1000, 9999);
+            $otp = rand(100000, 999999);
 
             // app(Otp::class)->sendOtp($request->phone, $otp);
 
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'message' => 'OTP generated successfully',
                 'otp' => $otp,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'message' => 'OTP generation failed: '.$e->getMessage(),
             ], 500);
         }
@@ -67,7 +67,7 @@ class Register_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -78,7 +78,7 @@ class Register_cnt extends Controller
                 'type' => 'reg',
                 'phone' => $request->phone,
                 'otp' => $request->otp,
-                'otp_verified' => 1,
+                'otp_verified' => 'yes',
             ]);
 
             $db_name = 'cogo_smart_'.Str::substr($master->name, 0, 4).'_'.$master->id;
@@ -103,21 +103,28 @@ class Register_cnt extends Controller
 
                 ]);
 
+
                 $token = JWTAuth::claims([
                     'db_name' => $master->db_name,
                 ])->fromUser($user_create);
 
                 Auth::guard('tenant')->setUser($user_create);
 
+                Tenant_db::main(); // switch to main DB
+
+                $master_fid = DB::connection('mysql')->table('users')->where('id', $master->id)->update([
+                    'f_id' => $user_create->id,
+                ]);
+
             } catch (\Exception $e) {
                 return response()->json([
-                    'status' => false,
+                    'success' => false,
                     'message' => 'Database connection failed: '.$e->getMessage(),
                 ], 500);
             }
 
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'message' => 'User registered successfully',
                 'data' => $user_create,
                 'token' => $token,
@@ -125,7 +132,7 @@ class Register_cnt extends Controller
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'message' => 'User registration failed: '.$e->getMessage(),
             ], 500);
         }
@@ -144,7 +151,7 @@ class Register_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -159,12 +166,12 @@ class Register_cnt extends Controller
             // $user->save();
 
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'message' => 'Password updated successfully',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'message' => 'Password update failed: '.$e->getMessage(),
             ], 500);
         }

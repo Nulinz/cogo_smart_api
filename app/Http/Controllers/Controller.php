@@ -22,7 +22,7 @@ abstract class Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -55,14 +55,14 @@ abstract class Controller
 
         if ($exists) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'value' => 1,
                 'message' => 'Mobile number already exists',
             ], 422);
         } else {
 
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'value' => 0,
                 'message' => 'Mobile number is available',
             ]);

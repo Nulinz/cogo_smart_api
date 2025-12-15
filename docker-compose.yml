@@ -5,7 +5,7 @@ services:
     build: .
     container_name: cogosmart_php
     volumes:
-      - .:/var/www/html/new
+      - .:/var/www/html/new  # This maps host path to container path
     working_dir: /var/www/html/new
     ports:
       - "9000:9000"
