@@ -6,6 +6,7 @@ use App\Models\Quality;
 use App\Models\Transport;
 use App\Models\Truck_capacity;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class Base_ser
 {
@@ -21,7 +22,7 @@ class Base_ser
         //     ]
         // );
 
-        if (! empty($data['quality_id'])) {
+        if (isset($data['quality_id'])) {
             // UPDATE: only status
             if (isset($data['status'])) {
                 return Quality::where('id', $data['quality_id'])->update([
@@ -35,6 +36,7 @@ class Base_ser
 
         } else {
             // CREATE: full insert
+            Log::info("Creating quality", ['data' => $data]);
             return Quality::create([
                 'quality' => $data['quality'],
                 'status' => $data['status'] ?? 'active',
@@ -45,7 +47,7 @@ class Base_ser
 
     public static function create_transport(array $data)
     {
-        if (! empty($data['transport_id'])) {
+        if (isset($data['transport_id'])) {
             // UPDATE: only status
             if (isset($data['status'])) {
                 return Transport::where('id', $data['transport_id'])->update([
@@ -74,7 +76,7 @@ class Base_ser
 
     public static function create_truck(array $data)
     {
-        if (! empty($data['truck_id'])) {
+        if (isset($data['truck_id'])) {
             // UPDATE: only status
             if (isset($data['status'])) {
                 return Truck_capacity::where('id', $data['truck_id'])->update([
@@ -98,4 +100,39 @@ class Base_ser
         }
 
     }
+
+     // fetch list of qulaities, transports, trucks
+        public static function get_common_list($type)
+        {
+            switch ($type) {
+                case 'quality':
+                    return Quality::where('status', 'active')->get();
+                case 'transport':
+                    return Transport::where('status', 'active')->get();
+                case 'truck':
+                    return Truck_capacity::where('status', 'active')->get();
+                default:
+                    return null;
+                    // throw new \InvalidArgumentException("Invalid type: $type");
+            }
+        }
+
+        // function to edit common entries
+
+        public static function edit_common_list(array $data)
+        {
+            // similar to create_common but only updates
+
+            switch ($data['type']) {
+                case 'quality':
+                    return Quality::where('id', $data['id'])->first();
+                case 'transport':
+                    return Transport::where('id', $data['id'])->first();
+                case 'truck':
+                    return Truck_capacity::where('id', $data['id'])->first();
+                default:
+                    return null;
+                    // throw new \InvalidArgumentException("Invalid type: $type");
+            }
+        }
 }

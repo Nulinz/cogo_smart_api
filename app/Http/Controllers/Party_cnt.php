@@ -15,9 +15,9 @@ class Party_cnt extends Controller
         $rule = [
             'party_id' => 'nullable|string',
             'party_en' => 'required|string',
-            'party_kn' => 'required|string',
+            'party_kn' => 'nullable|string',
             'party_nick_en' => 'required|string',
-            'party_nick_kn' => 'required|string',
+            'party_nick_kn' => 'nullable|string',
             'com_name' => 'required|string',
             'com_add' => 'required|string',
             'party_location' => 'required|string',
@@ -51,12 +51,65 @@ class Party_cnt extends Controller
                 'success' => true,
                 'message' => 'Party created/updated successfully',
                 'data' => $party,
-            ], 201);
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Party created/updated failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function get_party_details(Request $request)
+    {
+        $rule = [
+            'party_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+
+            $party = Party_ser::get_party_details($request->party_id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Party details fetched successfully',
+                'data' => $party,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch party details: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to fetch list of parties
+
+    public function get_party_list(Request $request)
+    {
+        try {
+            $parties = Party_ser::get_all_party();
+
+            return response()->json([
+                'success' => true,
+                'data' => $parties,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch party list: '.$e->getMessage(),
             ], 500);
         }
     }

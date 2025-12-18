@@ -5,33 +5,32 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
-class Party extends Model
+class Prime_load extends Model
 {
-    protected $connection = 'tenant';  // Use tenant DB
+     protected $connection = 'tenant';  // Use tenant DB
 
-    protected $table = 'm_party';
+    protected $table = 'm_load';
 
     protected $fillable = [
-        'party_seq',
-        'party_en',
-        'party_kn',
-        'party_nick_en',
-        'party_nick_kn',
-        'com_name',
-        'com_add',
-        'party_location',
-        'party_ph_no',
-        'party_wp_no',
-        'party_open_type',
-        'party_open_bal',
-        'party_acc_type',
-        'party_b_name',
-        'party_acc_name',
-        'party_acc_no',
-        'party_ifsc',
-        'party_upi',
-        'c_by',
+        'load_seq',
+        'market',
+        'party_id',
+        'empty_weight',
+        'load_date',
+        'veh_no',
+        'dr_no',
+        'transporter',
+        'quality_price',
+        'fliter_price',
+        'req_qty',
+        'truck_capacity',
+        'team',
         'status',
+        'c_by',
+    ];
+
+    protected $casts = [
+        'team' => 'array',   // or 'json'
     ];
 
     protected static function booted()
@@ -53,16 +52,16 @@ class Party extends Model
                     // ->where('status', 'active')
                     
 
-                $prefix = $seq->party_pref ?? 'CGSP';
-                $next   = $seq->party_suf ?? 1;
+                $prefix = $seq->load_pref ?? 'CGSL';
+                $next   = $seq->load_suf ?? 1;
                 // $padding = 0;
 
             } else {
                 // Subsequent inserts, get last inserted sequence
                 // $prefix = 'CGSF'; // fallback prefix for subsequent inserts
-                $lastSeq = self::whereNotNull('party_seq')
+                $lastSeq = self::whereNotNull('load_seq')
                     ->orderBy('id', 'desc')
-                    ->value('party_seq');
+                    ->value('load_seq');
 
                 $prefix = substr($lastSeq, 0, strpos($lastSeq, '-'));
 
@@ -73,7 +72,8 @@ class Party extends Model
         }
 
             // Generate sequence CGSL-001
-            $model->party_seq = $prefix . '-' . str_pad($next,$padding, '0', STR_PAD_LEFT);
+            $model->load_seq = $prefix . '-' . str_pad($next,$padding, '0', STR_PAD_LEFT);
         });
     }
+
 }

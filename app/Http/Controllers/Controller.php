@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Services\Tenant_db;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use App\Models\Sequence;
 
 abstract class Controller
 {
@@ -69,5 +71,51 @@ abstract class Controller
         }
 
         // return in_array($mobile_no, $existing_mobile_numbers);
+    }
+
+    public function create_sequence(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'load_pref' => 'required|string',
+            'load_suf' => 'required|string',
+            'farmer_pref' => 'required|string',
+            'farmer_suf' => 'required|string',
+            'party_pref' => 'required|string',
+            'party_suf' => 'required|string',
+        ]);
+
+        if( $validator->fails() ) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try{
+            $seq = Sequence::create(
+               
+                [
+                    'load_pref' => $request->load_pref,
+                    'load_suf' => $request->load_suf,
+                    'farmer_pref' => $request->farmer_pref,
+                    'farmer_suf' => $request->farmer_suf,
+                    'party_pref' => $request->party_pref,
+                    'party_suf' => $request->party_suf,
+                    'status' => 'active',
+                    'c_by' => Auth::guard('tenant')->user()->id,
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sequence created successfully',
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sequence created failed: '.$e->getMessage(),
+            ], 500);
+        }
     }
 }

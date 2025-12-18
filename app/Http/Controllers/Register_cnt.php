@@ -128,7 +128,7 @@ class Register_cnt extends Controller
                 'message' => 'User registered successfully',
                 'data' => $user_create,
                 'token' => $token,
-            ], 201);
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -177,62 +177,138 @@ class Register_cnt extends Controller
         }
     }
 
+    // function for login mobile number
+
+    public function login_phone(Request $request)
+    {
+        $rule = [
+            'phone' => 'required|string',
+
+        ];
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+             Tenant_db::main(); // switch to main DB
+
+            $mainUser = DB::table('users')->where('phone', $request->phone)->first();
+
+            // $user = User::where('phone', $request->phone)->first();
+
+            if (! $mainUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found',
+                    
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User found',
+                'data'=>$mainUser
+
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User fetch failed: '.$e->getMessage(),
+            ], 500);
+        }
+
+    }
+
     public function login(Request $request)
     {
 
-        Tenant_db::main(); // switch to main DB
+        // Tenant_db::main(); // switch to main DB
 
-        $mainUser = DB::table('users')->where('name', $request->name)->first();
+        // $mainUser = DB::table('users')->where('phone', $request->phone)->first();
 
-        // dd($mainUser);
+        // // dd($mainUser);
 
-        if (! $mainUser) {
-            return response()->json(['error' => 'User not found in main DB'], 404);
+        // if (! $mainUser) {
+        //     return response()->json(['error' => 'User not found in main DB'], 404);
+        // }
+
+       
+
+            $rule = [
+                'phone' => 'required|string',
+                'password' => 'required|string',
+                'db_name' => 'required|string',
+            ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
         }
-        Tenant_db::connect($mainUser->db_name); // switch to tenant DB
-        // dd($request->all());
-        $credentials = $request->only('name', 'password');
 
-        // User::create([
-        //     'name' => 'tenant_user',
-        //     'email' => 'tenant_user@example.com',
-        //     'password' => Hash::make('password'),
-        // ]);
+        try{
 
-        $user = User::where('name', $request->name)->first();
+            Tenant_db::connect($request->db_name); // switch to tenant DB
 
-        // IMPORTANT: when TenantDB middleware made 'tenant' default, you can call Auth::attempt()
-        // If not default, use Auth::guard('tenant')->attempt($credentials)
-        // if (! $token = Auth::guard('tenant')->attempt($credentials)) {
-        //     return response()->json(['error' => 'Invalid credentials'], 401);
-        // }
+            
 
-        // if (! $user || ! Hash::check($request->password, $user->password)) {
-        //     return response()->json(['error' => 'Invalid credentials'], 401);
-        // }
+            $user = User::where('phone', $request->phone)->where('password', $request->password)->first();
 
-        // Manually verify password
-        // if (! Hash::check($request->password, $user->password)) {
-        //     return response()->json(['error' => 'Invalid credentials'], 401);
-        // }
+            if(! $user){
+                return response()->json(['success'=>false,'error' => 'Invalid credentials'], 401);
+            }
 
-        // Manually generate JWT token for this user
-        // Generate token with tenant DB inside it
-        $token = JWTAuth::claims([
-            'db_name' => $mainUser->db_name,
-        ])->fromUser($user);
+            $token = JWTAuth::claims([
+                        'db_name' => $request->db_name,
+                    ])->fromUser($user);
 
-        Auth::guard('tenant')->setUser($user);
+            Auth::guard('tenant')->setUser($user);
 
-        // return response()->json([
-        //     // 'token' => $token,
-        //     // 'user' => $user,
-        // ]);
+            // return response()->json([
+            //     // 'token' => $token,
+            //     // 'user' => $user,
+            // ]);
 
-        return response()->json([
-            'token' => $token,
-            'user' => Auth::guard('tenant')->user(),
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Login successful',
+                'token' => $token,
+                'user' => Auth::guard('tenant')->user(),
+            ]);
+
+            // IMPORTANT: when TenantDB middleware made 'tenant' default, you can call Auth::attempt()
+            // If not default, use Auth::guard('tenant')->attempt($credentials)
+            // if (! $token = Auth::guard('tenant')->attempt($credentials)) {
+            //     return response()->json(['error' => 'Invalid credentials'], 401);
+            // }
+
+            // if (! $user || ! Hash::check($request->password, $user->password)) {
+            //     return response()->json(['error' => 'Invalid credentials'], 401);
+            // }
+
+            // Manually verify password
+            // if (! Hash::check($request->password, $user->password)) {
+            //     return response()->json(['error' => 'Invalid credentials'], 401);
+            // }
+
+            // Manually generate JWT token for this user
+            // Generate token with tenant DB inside it
+        
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Login failed: '.$e->getMessage(),
+            ], 500);    
+        }
     }
 
     // Get logged-in user
@@ -263,5 +339,12 @@ class Register_cnt extends Controller
     public function check_mobile(Request $request)
     {
         return parent::check_mobile_exists($request);
+    }
+
+    // function for insert the sequence
+
+    public function create_seq(Request $request)
+    {
+        return parent::create_sequence($request);
     }
 }
