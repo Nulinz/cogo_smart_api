@@ -94,7 +94,7 @@ class Farmer_ser
 
     public static function get_all_farmers()
     {
-        $data = Farmer::where('status', 'active')->get();
+        $data = Farmer::where('status', 'active')->orderBy('fav','DESC')->get();
 
        // 2. Use map to iterate over each farmer and format the array
             $farmers = $data->map(function ($farmer) {

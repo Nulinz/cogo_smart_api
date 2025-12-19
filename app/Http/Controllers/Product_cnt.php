@@ -14,7 +14,7 @@ class Product_cnt extends Controller
 
         $rule = [
             'name_en' => 'required|string',
-            'name_kn' => 'required|string',
+            // 'name_kn' => 'required|string',
             'type' => 'required|string',
 
         ];
@@ -36,7 +36,7 @@ class Product_cnt extends Controller
                 'success' => true,
                 'message' => 'Product created successfully',
                 'data' => $product,
-            ], 201);
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -54,7 +54,7 @@ class Product_cnt extends Controller
         $rule = [
             'product_id' => 'required|integer',
             'name_en' => 'required|string',
-            'name_kn' => 'required|string',
+            // 'name_kn' => 'required|string',
 
         ];
 
@@ -122,6 +122,26 @@ class Product_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Product status update failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to get product list
+
+    public function get_product_list(Request $request)
+    {
+        try {
+            $products = Product::all();
+
+            return response()->json([
+                'success' => true,
+                'data' => $products,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve product list: '.$e->getMessage(),
             ], 500);
         }
     }

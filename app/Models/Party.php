@@ -32,6 +32,7 @@ class Party extends Model
         'party_upi',
         'c_by',
         'status',
+        'fav'
     ];
 
     protected static function booted()

@@ -347,4 +347,11 @@ class Register_cnt extends Controller
     {
         return parent::create_sequence($request);
     }
+
+    // toggle favorite for farmer and party
+
+    public function toggle_fav(Request $request)
+    {
+        return parent::toggle_fav($request);
+    }
 }

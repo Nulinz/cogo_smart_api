@@ -27,6 +27,9 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
 
     Route::post('/check_mobile', [Register_cnt::class, 'check_mobile']);
 
+    // toggle favorite for farmer and party
+    Route::post('/toggle_fav', [Register_cnt::class, 'toggle_fav']);
+
     // methods related to Farmer
     Route::post('/create_farm', [Farmer_cnt::class, 'create_farm']);
     Route::post('/get_farm_details', [Farmer_cnt::class, 'get_farmer_details']);
@@ -41,6 +44,7 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/create_product', [Product_cnt::class, 'create_product']);
     Route::post('/edit_product', [Product_cnt::class, 'edit_product']);
     Route::post('/active_product', [Product_cnt::class, 'active_product']);
+    Route::post('/get_product_list', [Product_cnt::class, 'get_product_list']);
 
       // mehtods for create quality, transport, truck
     Route::post('/create_common', [Base_cnt::class, 'create_common']);

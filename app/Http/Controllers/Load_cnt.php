@@ -46,7 +46,7 @@ class Load_cnt extends Controller
                 'success' => true,
                 'message' => 'Load created successfully',
                 // 'data' => $load,
-            ], 201);
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -95,7 +95,7 @@ class Load_cnt extends Controller
                 'success' => true,
                 'message' => 'Load item added successfully',
                 'data' => $load_item,
-            ], 201);
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([

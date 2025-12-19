@@ -14,7 +14,7 @@ class Product_ser
             // ['id' => $data['party_id'] ?? null],
             [
                 'name_en' => $data['name_en'],
-                'name_kn' => $data['name_kn'],
+                // 'name_kn' => $data['name_kn'],
                 'type' => $data['type'],
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
 

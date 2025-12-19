@@ -77,7 +77,7 @@ class Party_ser
 
     public static function get_all_party()
     {
-        $data =  Party::where('status','active')->get();
+        $data =  Party::where('status','active')->orderBy('fav','DESC')->get();
 
         // dd($data);
 
@@ -87,6 +87,7 @@ class Party_ser
                     'party_en'      => $party->party_en,
                     'party_nick_en' => $party->party_nick_en,
                     'party_location'  => $party->party_location,
+                    'phone'         => $party->party_ph_no,
                     'amount'       => 0
                 ];
             });

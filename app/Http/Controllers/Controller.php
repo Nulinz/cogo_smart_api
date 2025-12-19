@@ -118,4 +118,47 @@ abstract class Controller
             ], 500);
         }
     }
+
+    // functiopn for toggle  o and 1  for favorite
+
+     public function toggle_fav(Request $request)
+     {
+        $validator = Validator::make($request->all(), [
+            'type' => 'required|string|in:farmer,party',
+            'id' => 'required|integer',
+        ]);
+
+        if( $validator->fails() ) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $model_map = [
+            'farmer' => 'App\Models\Farmer',
+            'party' => 'App\Models\Party',
+        ];
+
+        $model_class = $model_map[$request->type];
+
+        $record = $model_class::find($request->id);
+
+        if (!$record) {
+            return response()->json([
+                'success' => false,
+                'message' => ucfirst($request->model).' not found',
+            ], 404);
+        }
+
+        // Toggle fav value
+       $record->fav = $record->fav == 1 ? 0 : 1;
+        $record->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => ucfirst($request->model).' favorite status updated',
+            'fav' => $record->fav,
+        ]);
+     }
 }
