@@ -354,4 +354,109 @@ class Register_cnt extends Controller
     {
         return parent::toggle_fav($request);
     }
+
+    // create a employee user
+
+    public function create_employee(Request $request)
+    {
+
+        $payload = JWTAuth::parseToken()->getPayload();
+
+        // $dbName = $payload->get('db_name');
+
+        $db = $payload->get('db_name');
+
+        $rule = [
+            'name' => 'required|string',
+            'phone' => 'required|string',
+            'role' => 'required|string',
+            'location' => 'required|string',
+
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+         DB::beginTransaction();
+
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'phone' => $request->phone,
+                'role' => $request->role,
+                'location' => $request->location,
+                'password' =>'123456',
+                'status' => 'active',
+            ]);
+
+            if($user){
+
+                Tenant_db::main(); // switch to main DB
+                $master_user = DB::table('users')->insert([
+                    'name' => $request->name,
+                    'type' => 'emp',
+                    'f_id' => $user->id,
+                    'phone' => $request->phone,
+                    'db_name' => $db,
+                    'otp' => 0,
+                    'otp_verified' => 'yes',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                Tenant_db::connect($db); // switch back to tenant DB
+                // $masterUser = DB::table('users')->where('phone', $request->phone)->first();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Employee created successfully',
+                'data' => $user,
+            ], 200);
+        } catch (\Exception $e) {
+             DB::rollBack();
+             Tenant_db::connect($db); // ensure DB reset
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Employee creation failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // fucntion to get employee list
+
+    public function get_employee_list(Request $request)
+    {
+        // $rule = [
+        //      'role' => 'required|string',
+        // ];
+        // $validator = Validator::make($request->all(), $rule);
+        // if ($validator->fails()) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'errors' => $validator->errors(),
+        //     ], 422);
+        // }
+        try{
+             $users = User::all();
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Database connection failed: '.$e->getMessage(),
+            ], 500);
+        }
+       
+
+        return response()->json([
+            'success' => true,
+            'data' => $users,
+        ], 200);
+    }
 }

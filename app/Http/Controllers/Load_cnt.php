@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Services\Load_ser;
+use Illuminate\Support\Facades\Log;
 
 class Load_cnt extends Controller
 {
@@ -12,6 +13,7 @@ class Load_cnt extends Controller
 
     public function create_load(Request $request)
     {
+        Log::info('Create load request data: ', $request->all());
         $rule = [
             'market' => 'required|string',
             'party_id' => 'required|string',
@@ -39,6 +41,7 @@ class Load_cnt extends Controller
         try {
             // Load creation logic here
 
+            // logger()->info('Creating load with data: ', $request->all());
             // Assuming Load_ser is a service class that handles load creation
             $load = Load_ser::create_load($request->all());
 

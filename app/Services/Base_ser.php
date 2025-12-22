@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Quality;
 use App\Models\Transport;
 use App\Models\Truck_capacity;
+use App\Models\Loss;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -101,18 +102,62 @@ class Base_ser
 
     }
 
+    // function to create loss category
+
+    public static function create_loss(array $data)
+    {
+        if (isset($data['loss_id'])) {
+            // UPDATE: only status
+            if (isset($data['status'])) {
+                return Loss::where('id', $data['loss_id'])->update([            
+                    'status' => $data['status'] ?? 'active',
+                ]);
+            } else {
+                return Loss::where('id', $data['loss_id'])->update([
+                    'loss' => $data['loss'],
+                ]);
+            }
+        } else {
+            // CREATE: full insert
+            return Loss::create([
+                'loss' => $data['loss'],
+                'status' => $data['status'] ?? 'active',
+                'c_by' => Auth::guard('tenant')->user()->id ?? null,
+            ]);
+        }
+    }
+
      // fetch list of qulaities, transports, trucks
-        public static function get_common_list($type)
+        public static function get_common_list(array $data)
         {
-            switch ($type) {
+            switch ($data['type']) {
                 case 'quality':
-                    return Quality::where('status', 'active')->get();
+                    if($data['status']=='all'){
+                        return Quality::all();
+                    }else{
+                        return Quality::where('status', $data['status'])->get();
+                    }
                 case 'transport':
-                    return Transport::where('status', 'active')->get();
+                    if($data['status']=='all'){
+                        return Transport::all();
+                    }else{
+                        return Transport::where('status', $data['status'])->get();
+                    }
                 case 'truck':
-                    return Truck_capacity::where('status', 'active')->get();
+                    if($data['status']=='all'){
+                        return Truck_capacity::all();
+                    }else{
+                        return Truck_capacity::where('status', $data['status'])->get();
+                    }
+                case 'loss':
+                    if($data['status']=='all'){
+                        return Loss::all();
+                    }else{
+                        return Loss::where('status', $data['status'])->get();
+                    }
                 default:
                     return null;
+                   
                     // throw new \InvalidArgumentException("Invalid type: $type");
             }
         }
@@ -130,6 +175,8 @@ class Base_ser
                     return Transport::where('id', $data['id'])->first();
                 case 'truck':
                     return Truck_capacity::where('id', $data['id'])->first();
+                case 'loss':
+                    return Loss::where('id', $data['id'])->first();
                 default:
                     return null;
                     // throw new \InvalidArgumentException("Invalid type: $type");

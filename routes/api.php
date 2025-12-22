@@ -45,6 +45,7 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/edit_product', [Product_cnt::class, 'edit_product']);
     Route::post('/active_product', [Product_cnt::class, 'active_product']);
     Route::post('/get_product_list', [Product_cnt::class, 'get_product_list']);
+    Route::post('/get_product_details', [Product_cnt::class, 'get_product_details']);
 
       // mehtods for create quality, transport, truck
     Route::post('/create_common', [Base_cnt::class, 'create_common']);
@@ -60,4 +61,8 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
 
     Route::post('/me', [Register_cnt::class, 'me']);
     Route::post('/logout', [Register_cnt::class, 'logout']);
+
+    // create a employee user
+    Route::post('/create_employee', [Register_cnt::class, 'create_employee']);
+    Route::post('/get_employee_list', [Register_cnt::class, 'get_employee_list']);
 });

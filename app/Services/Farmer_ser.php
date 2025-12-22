@@ -103,7 +103,8 @@ class Farmer_ser
                     'farm_en'      => $farmer->farm_en,
                     'farm_nick_en' => $farmer->farm_nick_en,
                     'location'     => $farmer->location,
-                    'amount'       => 0
+                    'amount'       => 0,
+                    'fav'          => $farmer->fav,
                 ];
             });
 

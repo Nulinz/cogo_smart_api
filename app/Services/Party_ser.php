@@ -88,7 +88,8 @@ class Party_ser
                     'party_nick_en' => $party->party_nick_en,
                     'party_location'  => $party->party_location,
                     'phone'         => $party->party_ph_no,
-                    'amount'       => 0
+                    'amount'       => 0,
+                    'fav'          => $party->fav,
                 ];
             });
 

@@ -18,7 +18,7 @@ class Base_cnt extends Controller
         Log::info("message", ['request' => $request->all()]);
       
 
-            if( $request->filled('transport_id') || $request->filled('truck_id') || $request->filled('quality_id') ) {
+            if( $request->filled('transport_id') || $request->filled('truck_id') || $request->filled('quality_id') || $request->filled('loss_id') ){
 
                 $rulesMap = [
                         'quality' => [
@@ -31,6 +31,9 @@ class Base_cnt extends Controller
 
                         'truck' => [
                             'truck_id' => 'required|string',
+                        ],
+                        'loss' => [
+                            'loss_id' => 'required|string',
                         ],
                     ];
             }else{
@@ -47,6 +50,9 @@ class Base_cnt extends Controller
                     'truck' => [
                         'capacity' => 'required|string',
                         'charge'   => 'required|string',
+                    ],
+                    'loss' => [
+                        'loss' => 'required|string',
                     ],
                 ];
             }
@@ -76,6 +82,8 @@ class Base_cnt extends Controller
                 $quality = Base_ser::create_transport($request->all());
             } elseif ($request->type == 'truck') {
                 $quality = Base_ser::create_truck($request->all());
+            } elseif ($request->type == 'loss') {
+                $quality = Base_ser::create_loss($request->all());
             } else {
 
                 $quality = Base_ser::create_quality($request->all());
@@ -101,7 +109,7 @@ class Base_cnt extends Controller
     public function get_common_list(Request $request)
     {
         $rules = [
-            'type' => 'required|string|in:quality,transport,truck',
+            'type' => 'required|string|in:quality,transport,truck,loss',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -114,7 +122,7 @@ class Base_cnt extends Controller
         }
 
         try {
-            $list = Base_ser::get_common_list($request->type);
+            $list = Base_ser::get_common_list($request->all());
 
             return response()->json([
                 'success' => true,
@@ -135,7 +143,7 @@ class Base_cnt extends Controller
     {
         // Logic to edit quality, transport, truck can be added here
     $rules = [
-            'type' => 'required|string|in:quality,transport,truck',
+            'type' => 'required|string|in:quality,transport,truck,loss',
             'id' => 'required|string',
         ];
 

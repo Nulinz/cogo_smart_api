@@ -27,9 +27,15 @@ class Product_ser
         return Product::where('id', $data['product_id'])->update(
             [
                 'name_en' => $data['name_en'],
-                'name_kn' => $data['name_kn'],
+                // 'name_kn' => $data['name_kn'],
 
             ]
         );
     }
+
+    public static function get_product_details(array $data)
+    {
+        return Product::find($data['product_id']);
+    }
+    
 }

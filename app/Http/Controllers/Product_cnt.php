@@ -145,4 +145,38 @@ class Product_cnt extends Controller
             ], 500);
         }
     }
+
+    // fucntion to get product details
+
+    public function get_product_details(Request $request)
+    {
+        $rule = [
+            'product_id' => 'required|integer',
+
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $product = Product_ser::get_product_details($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $product,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve product details: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 }

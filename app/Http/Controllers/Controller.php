@@ -32,7 +32,7 @@ abstract class Controller
         $mobile_no = $request->mobile_no;
         $existing_mobile_numbers = [];
 
-        if ($request->type == 'register') {
+        if ($request->type == 'register' || $request->type == 'team') {
 
             Tenant_db::main(); // switch to main DB
 
