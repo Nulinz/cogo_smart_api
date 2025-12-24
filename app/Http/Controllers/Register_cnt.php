@@ -38,6 +38,23 @@ class Register_cnt extends Controller
 
             // app(Otp::class)->sendOtp($request->phone, $otp);
 
+            Tenant_db::main(); // switch to main DB
+            $masterUser = DB::table('users')->where('phone', $request->phone)->first();
+            // if ($masterUser) {
+            //     DB::table('users')->where('phone', $request->phone)->update([
+            //         'otp' => $otp,
+            //         'otp_verified' => 'no',
+            //     ]);
+            // } else {
+            //     $masterUser = DB::table('users')->insert([
+            //         'phone' => $request->phone,
+            //         'otp' => $otp,
+            //         'otp_verified' => 'no',
+            //         'created_at' => now(),
+            //         'updated_at' => now(),
+            //     ]);
+            // }
+
             return response()->json([
                 'success' => true,
                 'message' => 'OTP generated successfully',
@@ -207,6 +224,20 @@ class Register_cnt extends Controller
                     'message' => 'User not found',
                     
                 ], 404);
+            }
+
+            if($mainUser->otp_verified != 'yes') {
+
+                Tenant_db::connect($mainUser->db_name); // switch to tenant DB
+
+                $user_data = User::where('phone', $request->phone)->first();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'OTP not verified',
+                    'data'=>$user_data->role
+                    
+                ], 403);
             }
 
             return response()->json([
@@ -405,7 +436,7 @@ class Register_cnt extends Controller
                     'phone' => $request->phone,
                     'db_name' => $db,
                     'otp' => 0,
-                    'otp_verified' => 'yes',
+                    'otp_verified' => 'no',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -457,6 +488,61 @@ class Register_cnt extends Controller
         return response()->json([
             'success' => true,
             'data' => $users,
+        ], 200);
+    }
+
+
+    // function tp update employee OTP verified status
+
+    public function update_emp_otp_status(Request $request)
+    {
+        Tenant_db::main(); // switch to main DB
+        $rule = [
+            // 'user_id' => 'required|string',
+            'phone' => 'required|string|unique:users,phone',
+            'otp' => 'required|string',
+
+        ];
+        $validator = Validator::make($request->all(), $rule);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try{
+             $user = DB::table('users')->where('phone', $request->phone)->update([
+                'otp' => $request->otp,
+                'otp_verified' => 'yes',
+             ]);
+
+             $main_data = DB::table('users')->where('phone', $request->phone)->first();
+
+             Tenant_db::connect($main_data->db_name); // switch to tenant DB
+
+             $user_data = User::where('phone', $request->phone)->first();
+
+
+            $token = JWTAuth::claims([
+                'db_name' => $main_data->db_name,
+            ])->fromUser($user_data);
+
+            Auth::guard('tenant')->setUser($user_data);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Database connection failed: '.$e->getMessage(),
+            ], 500);
+        }
+       
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP status updated successfully',
+            'data' => $user_data,
+            'token' => $token,  
         ], 200);
     }
 }

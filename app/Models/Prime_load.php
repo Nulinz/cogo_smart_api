@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use App\Models\Party;
+use App\Models\Transporter;
+use App\Models\Truck_capacity;
 
 class Prime_load extends Model
 {
@@ -11,9 +15,12 @@ class Prime_load extends Model
 
     protected $table = 'm_load';
 
+    // protected $appends = ['team_members']; // <<< important
+
     protected $fillable = [
         'load_seq',
         'market',
+        'product_id',
         'party_id',
         'empty_weight',
         'load_date',
@@ -74,6 +81,41 @@ class Prime_load extends Model
             // Generate sequence CGSL-001
             $model->load_seq = $prefix . '-' . str_pad($next,$padding, '0', STR_PAD_LEFT);
         });
+    }
+
+
+    // public function team_members()
+    // {
+    //     return $this->belongsToMany(User::class, 'load_team', 'load_id', 'user_id');
+    // }
+
+    public function getTeamMembersAttribute()
+    {
+        if (empty($this->team) || !is_array($this->team)) {
+            return collect();
+        }
+
+        return User::whereIn('id', $this->team)->select('id','name')->get();
+    }
+
+    public function party_data()
+    {
+        return $this->belongsTo(Party::class, 'party_id', 'id');
+    }
+
+    // public function party_data()
+    // {
+    //     return $this->hasMany(Party::class, 'id' ,'party_id');
+    // }
+
+    public function transporter()
+    {
+        return $this->hasMany(Transport::class, 'id', 'transporter');
+    }
+
+    public function truck_capacity()
+    {
+        return $this->hasMany(Truck_capacity::class, 'id','capacity');
     }
 
 }

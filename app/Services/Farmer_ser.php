@@ -110,4 +110,38 @@ class Farmer_ser
 
         return $farmers;
     }
+
+    // fucntion to get farmer profile details
+    public static function farmer_profile(array $data){
+
+
+        $farm_id = $data['farm_id'];
+
+        $data = Farmer::select('id as farm_id','farm_en', 'farm_nick_en', 'location', 'ph_no','wp_no','fav')
+                ->where('id', $farm_id)
+                ->first();
+
+        $data->amount = 0;
+        $data->balance =0;
+
+       return $data;
+    }
+
+    //function to get farmer advance pending
+
+    public static function farmer_advance_pending(array $data){
+
+        $farm_id = $data['farm_id'];
+
+        $pending_advance = 0;
+
+        // Logic to calculate pending advance can be added here
+
+        return $pending_advance;
+
+        // return [
+        //     'farm_id' => $farm_id,
+        //     'pending_advance' => $pending_advance,
+        // ];
+    }   
 }

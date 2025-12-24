@@ -29,4 +29,24 @@ class Load extends Model
         'c_by',
     ];
         
+    // relationships
+    public function farmer_data()
+    {
+        return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
+    }
+
+    public function product_data()
+    {
+        return $this->belongsTo(Product::class, 'product_id', 'id');
+    }
+
+    public function load_data()
+    {
+        return $this->belongsTo(Prime_load::class, 'load_id', 'id');
+    }
+
+    // public function party_data()
+    // {
+    //     return $this->belongsTo(Party::class, 'party_id', 'id');
+    // }
 }

@@ -15,9 +15,11 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('l_name')->nullable();
+            $table->enum('role', ['admin', 'manager','emp'])->default('admin');
             $table->string('phone')->nullable();
             $table->string('password')->nullable();
             $table->string('fcm', 255)->nullable();
+            $table->string('location',200)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });

@@ -112,4 +112,67 @@ class Farmer_cnt extends Controller
             ], 500);
         }
     }
+    // function for farmer profile
+
+    public function farmer_profile(Request $request)
+    {
+        $rule = [
+            'farm_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        try {
+            $profile = Farmer_ser::farmer_profile($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $profile,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch farmer profile: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for farmer advance pending
+
+    public function farmer_advance_pending(Request $request)
+    {
+        $rule = [
+            'farm_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        try {
+            $advance = Farmer_ser::farmer_advance_pending($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $advance,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch farmer advance pending: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 }

@@ -109,7 +109,7 @@ abstract class Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Sequence created successfully',
-            ], 201);
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([

@@ -12,12 +12,18 @@ use Illuminate\Support\Facades\Route;
 //     return response()->json(['message' => 'API is working']);
 // });
 
+// update popup
+
+Route::post('/update_popup',function () {
+    return response()->json(['version' => '0.0.1']);
+});
+
 // register
 Route::post('/register', [Register_cnt::class, 'register']);
 Route::post('/generate_otp', [Register_cnt::class, 'generate_otp']);
 
-Route::post('/login_phone', [Register_cnt::class, 'login_phone']);
-Route::post('/login', [Register_cnt::class, 'login']);
+Route::post('/login_phone', [Register_cnt::class, 'login_phone']); //--> step-1
+Route::post('/login', [Register_cnt::class, 'login']); //--> step-2
 
 Route::post('/check_mobile_register', [Register_cnt::class, 'check_mobile']);
 
@@ -34,11 +40,13 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/create_farm', [Farmer_cnt::class, 'create_farm']);
     Route::post('/get_farm_details', [Farmer_cnt::class, 'get_farmer_details']);
     Route::post('/get_farm_list', [Farmer_cnt::class, 'get_farmer_list']);
+    Route::post('/farmer_profile', [Farmer_cnt::class, 'farmer_profile']);
 
     // methods related to Party
     Route::post('/create_party', [Party_cnt::class, 'create_party']);
     Route::post('/get_party_details', [Party_cnt::class, 'get_party_details']);
     Route::post('/get_party_list', [Party_cnt::class, 'get_party_list']);
+    Route::post('/party_profile', [Party_cnt::class, 'party_profile']);
 
     // methods for product
     Route::post('/create_product', [Product_cnt::class, 'create_product']);
@@ -58,6 +66,9 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     // method to create load
     Route::post('/create_load', [Load_cnt::class, 'create_load']);
     Route::post('/add_load_item', [Load_cnt::class, 'add_load_item']);
+    Route::post('/get_load_list', [Load_cnt::class, 'get_load_list']);
+    Route::post('/ind_load_list', [Load_cnt::class, 'ind_load_list']);
+    Route::post('/ind_load_details', [Load_cnt::class, 'ind_load_details']);
 
     Route::post('/me', [Register_cnt::class, 'me']);
     Route::post('/logout', [Register_cnt::class, 'logout']);
@@ -65,4 +76,26 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     // create a employee user
     Route::post('/create_employee', [Register_cnt::class, 'create_employee']);
     Route::post('/get_employee_list', [Register_cnt::class, 'get_employee_list']);
+    // Route::post('/get_employee_details', [Register_cnt::class, 'get_employee_details']);
+
+    // advance related routes
+    // Route::post('/add_advance', [Base_cnt::class, 'add_advance']);
+    // Route::post('/get_advance_list', [Base_cnt::class, 'get_advance_list']);
+    Route::post('/farmer_advance_pending', [Farmer_cnt::class, 'farmer_advance_pending']);
+
+
+    // create teh stock in entry
+    Route::post('/add_purchase', [Load_cnt::class, 'add_purchase']);
+
+    // create the stock out entry
+    Route::post('/add_sales', [Load_cnt::class, 'add_sales']);
+
+
+    // create the filter data
+
+    Route::post('/add_filter', [Load_cnt::class, 'add_filter']);
+    Route::post('/get_filter_list', [Load_cnt::class, 'get_filter_list']);
+    Route::post('/edit_filter', [Load_cnt::class, 'edit_filter']);
+
+
 });

@@ -81,6 +81,8 @@ class Load_cnt extends Controller
             'total_amt' => 'required|string',
         ];
 
+        // log::info( 'Add load item request data: ' . json_encode($request->all(), JSON_PRETTY_PRINT));
+
         $validator = Validator::make($request->all(), $rule);
 
         if ($validator->fails()) {
@@ -107,5 +109,271 @@ class Load_cnt extends Controller
             ], 500);
         }
 
+    }
+
+    // function to get load list
+    public function get_load_list(Request $request)
+    {
+        try {
+            $loads = Load_ser::get_load_list();
+
+            return response()->json([
+                'success' => true,
+                'data' => $loads,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch load list: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to get individual load list
+    public function ind_load_list(Request $request)
+    {
+        $rule = [
+            'load_id' => 'required|string',
+        ];  
+        $validator = Validator::make($request->all(), $rule);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        try {
+            $load_items = Load_ser::ind_load_list($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $load_items,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch individual load list: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to get individual load details
+    public function ind_load_details(Request $request)
+    {
+        // Method implementation here
+
+        $rule = [
+            'load_item_id' => 'required|string',
+        ];
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $load_details = Load_ser::ind_load_details($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $load_details,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch individual load details: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    // function to add stock in entry
+
+    public function add_purchase(Request $request)
+    {
+        // Method implementation here
+
+        $rule = [
+            'cat' => 'required|string|in:load,manual',
+            'load_id' => 'required|string',
+            'farmer_id' => 'required|string',
+            'product_id' => 'required|string',
+            'total_piece' => 'required|string',
+            'grace_piece' => 'required|string',
+            'grace_per' => 'required|string',
+            'bill_piece' => 'required|string',
+            'price' => 'required|string',
+            'commission' => 'required|string',
+            'bill_amount' => 'required|string',
+            'adv' => 'required|string',
+            'quality' => 'required|string',
+            'total_amt' => 'required|string',
+        ];
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $stock_in = Load_ser::add_purchase($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock in entry added successfully',
+                'data' => $stock_in,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Adding stock in entry failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to add stock out entry
+
+    public function add_sales(Request $request)
+    {
+        $rule = [
+           'cat' => 'required|string|in:load,sales',
+            'load_id' => 'required|string',
+            'farmer_id' => 'required|string',
+            'product_id' => 'required|string',
+            'total_piece' => 'required|string',
+            'grace_piece' => 'required|string',
+            'grace_per' => 'required|string',
+            'bill_piece' => 'required|string',
+            'price' => 'required|string',
+            'commission' => 'required|string',
+            'bill_amount' => 'required|string',
+            'adv' => 'required|string',
+            'quality' => 'required|string',
+            'total_amt' => 'required|string',
+        ];
+        $validator = Validator::make($request->all(), $rule);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $stock_out = Load_ser::add_sales($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock out entry added successfully',
+                'data' => $stock_out,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Adding stock out entry failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // create the filter data
+
+    public function add_filter(Request $request)
+    {
+        $rule = [
+            'load_id' => 'required|string',
+            'emp_id' => 'required|string',
+            'total' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $filter = Load_ser::add_filter($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Filter data added successfully',
+                'data' => $filter,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Adding filter data failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to get filter list
+
+    public function get_filter_list(Request $request)
+    {
+        try {
+            $filters = Load_ser::get_filter_list($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $filters,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch filter list: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to edit filter data
+
+    public function edit_filter(Request $request)
+    {
+        $rule = [
+            'filter_id' => 'required|string',
+            'total' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $filter = Load_ser::edit_filter($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Filter data updated successfully',
+                'data' => $filter,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Updating filter data failed: '.$e->getMessage(),
+            ], 500);
+        }
     }
 }

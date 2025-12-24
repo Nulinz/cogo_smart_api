@@ -96,4 +96,19 @@ class Party_ser
         return $party;
 
     }
+
+    // function to get party profile details
+
+    public static function party_profile(array $data){
+
+        $party_id = $data['party_id'];
+
+        $data = Party::select('id as party_id','party_en', 'party_nick_en', 'party_location', 'party_ph_no','party_wp_no','fav')
+                ->where('id', $party_id)
+                ->first();
+        $data->amount = 0;
+        $data->balance =0;
+
+       return $data;
+    }
 }

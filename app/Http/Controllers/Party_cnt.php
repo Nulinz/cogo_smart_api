@@ -113,4 +113,37 @@ class Party_cnt extends Controller
             ], 500);
         }
     }
+
+    // function for party profile
+
+    public function party_profile(Request $request)
+    {
+        $rule = [
+            'party_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $party = Party_ser::party_profile($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $party,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch party profile: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 }
