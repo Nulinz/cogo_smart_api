@@ -13,6 +13,7 @@ class Load extends Model
     protected $fillable = [
         'cat',
         'load_id',
+        'shift_id',
         'farmer_id',
         'product_id',
         'total_piece',
@@ -45,7 +46,12 @@ class Load extends Model
         return $this->belongsTo(Prime_load::class, 'load_id', 'id');
     }
 
-    // public function party_data()
+    public function getCreatedAtAttribute($value)
+    {
+        return date('d-m-Y H:i:s', strtotime($value));
+    }
+
+    // public function party_details()
     // {
     //     return $this->belongsTo(Party::class, 'party_id', 'id');
     // }

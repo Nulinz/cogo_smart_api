@@ -6,6 +6,7 @@ use App\Http\Controllers\Party_cnt;
 use App\Http\Controllers\Product_cnt;
 use App\Http\Controllers\Register_cnt;
 use App\Http\Controllers\Load_cnt;
+use App\Http\Controllers\Stock_cnt;
 use Illuminate\Support\Facades\Route;
 
 // Route::post('/new', function () {
@@ -28,6 +29,10 @@ Route::post('/login', [Register_cnt::class, 'login']); //--> step-2
 Route::post('/check_mobile_register', [Register_cnt::class, 'check_mobile']);
 
 Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
+
+  // dashboard data
+
+    Route::post('/dashboard', [Base_cnt::class, 'dashboard']);
 
     Route::post('/update_password', [Register_cnt::class, 'update_password']);
 
@@ -70,6 +75,13 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/ind_load_list', [Load_cnt::class, 'ind_load_list']);
     Route::post('/ind_load_details', [Load_cnt::class, 'ind_load_details']);
 
+    // load self list
+    Route::post('/load_self_list', [Load_cnt::class, 'load_self_list']);
+
+    // shift load items
+    Route::post('/add_shift_item', [Load_cnt::class, 'add_shift_item']);
+    // Route::post('/shift_load_items', [Load_cnt::class, 'shift_load_items']);
+
     Route::post('/me', [Register_cnt::class, 'me']);
     Route::post('/logout', [Register_cnt::class, 'logout']);
 
@@ -90,12 +102,36 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     // create the stock out entry
     Route::post('/add_sales', [Load_cnt::class, 'add_sales']);
 
-
+    // create teh shift to load from stock entry
+    Route::post('/stock_shift', [Load_cnt::class, 'stock_shift']);
+    Route::post('/stock_home', [Stock_cnt::class, 'stock_home']);
+    Route::post('/stock_transaction_list', [Stock_cnt::class, 'stock_transaction_list']);
+    Route::post('/get_stock_product', [Stock_cnt::class, 'get_stock_product']);
     // create the filter data
 
     Route::post('/add_filter', [Load_cnt::class, 'add_filter']);
     Route::post('/get_filter_list', [Load_cnt::class, 'get_filter_list']);
     Route::post('/edit_filter', [Load_cnt::class, 'edit_filter']);
 
+    // farmer transaction
+
+    Route::post('/farmer_pay_out', [Farmer_cnt::class, 'farmer_pay_out']);
+    Route::post('/farmer_pay_in', [Farmer_cnt::class, 'farmer_pay_in']);
+
+    // coconut availabilty
+
+    Route::post('/add_coconut', [Base_cnt::class, 'add_coconut']);
+    Route::post('/get_coconut_emp', [Base_cnt::class, 'get_coconut_emp']);
+    Route::post('/get_coconut_list', [Base_cnt::class, 'get_coconut_list']);
+
+    //load summary
+    Route::post('/add_load_summary', [Stock_cnt::class, 'add_load_summary']);
+    Route::post('/get_load_summary', [Stock_cnt::class, 'get_load_summary']);
+    Route::post('/edit_load_summary', [Stock_cnt::class, 'edit_load_summary']);
+    Route::post('/summary_new', [Stock_cnt::class, 'summary_new']);
+
+    // add invoice
+    Route::post('/add_invoice', [Stock_cnt::class, 'add_invoice']);
+    Route::post('/get_invoice', [Stock_cnt::class, 'get_invoice']);
 
 });

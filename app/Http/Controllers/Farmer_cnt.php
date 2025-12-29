@@ -175,4 +175,76 @@ class Farmer_cnt extends Controller
             ], 500);
         }
     }
+
+    // function for farmer pay out
+
+    public function farmer_pay_out(Request $request)
+    {
+        $rule = [
+            'farm_id' => 'required|string',
+            'type' => 'required|string|in:advance,purchase',
+            'amount' => 'required|string',
+            'pay_method' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        try {
+            $payout = Farmer_ser::farmer_pay_out($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Farmer pay out recorded successfully',
+                'data' => $payout,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to record farmer pay out: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for farmer pay in   
+
+    public function farmer_pay_in(Request $request)
+    {
+        $rule = [
+            'farm_id' => 'required|string',
+            'type' => 'required|string|in:advance_deduct',
+            'amount' => 'required|string',
+            'pay_method' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        try {
+            $payin = Farmer_ser::farmer_pay_in($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Farmer pay in recorded successfully',
+                'data' => $payin,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to record farmer pay in: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 }

@@ -172,5 +172,111 @@ class Base_cnt extends Controller
         }
     }
 
+    // function to add coconut availability
+
+    public function add_coconut(Request $request)
+    {
+        $rules = [
+            'farm_id'  => 'required|string',
+            'coconut'  => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $coconut = Base_ser::add_coconut($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Coconut availability added successfully',
+                'data' => $coconut,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add coconut availability: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for get coconut availability
+
+    public function get_coconut_emp(Request $request)
+    {
+        $rules = [
+            'emp_id'  => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $coconut = Base_ser::get_coconut_emp($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $coconut,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch coconut availability: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+    // function for get coconut availability
+
+    public function get_coconut_list(Request $request)
+    {
+        try {
+            $coconut = Base_ser::get_coconut_list($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $coconut,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch coconut availability: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // dashboard data
+
+    public function dashboard(Request $request)
+    {
+        try {
+            $dashboardData = Base_ser::dashboard_data($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $dashboardData,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch dashboard data: '.$e->getMessage(),
+            ], 500);
+        }
+    }
     
 }

@@ -6,6 +6,8 @@ use App\Models\Quality;
 use App\Models\Transport;
 use App\Models\Truck_capacity;
 use App\Models\Loss;
+use App\Models\Coconut;
+use App\Services\Farmer_ser;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -182,4 +184,97 @@ class Base_ser
                     // throw new \InvalidArgumentException("Invalid type: $type");
             }
         }
+
+        // function to add coconut availability 
+
+        public static function add_coconut(array $data)
+        {
+            return Coconut::create([
+                'farm_id' => $data['farm_id'],
+                'coconut' => $data['coconut'],
+                'c_by'    => Auth::guard('tenant')->user()->id ?? null,
+            ]);
+        }
+
+    // funciton to get coconut availability
+
+    public static function get_coconut_emp(array $data)
+    {
+        $today = date('Y-m-d');
+
+        $coconut =  Coconut::with(['farmer_data:id,farm_en,location','emp_data:id,name'])->where('c_by', $data['emp_id'])->whereDate('created_at', $today)->get();
+
+        $coconut_sum = $coconut->sum('coconut');
+
+        $farm_group = $coconut->groupBy('farm_id')->map(function ($item) {
+            return [
+                'farm_en'  => $item->first()->farmer_data->farm_en,
+                'location' => $item->first()->farmer_data->location,
+                'total_coconut' => $item->sum('coconut'),
+            ];
+        })->values();
+
+        return [
+            'coconut_sum'  => $coconut_sum,
+            'farm_group'   => $farm_group,
+        ];
+    }
+
+    // function to get coconut availability
+
+    public static function get_coconut_list(array $data)
+    {
+        $today = date('Y-m-d');
+
+        $coconut =  Coconut::with(['emp_data:id,name,location'])->whereDate('created_at', $today)->get();
+
+        $coconut_sum = $coconut->sum('coconut');
+
+        $emp_group = $coconut->groupBy('c_by')->map(function ($item) {
+           $emp = $item->first()->emp_data;
+
+                return [
+                    'emp_name'       => $emp->name ?? null,
+                    'location'       => $emp->location ?? null,
+                    'farmer_count'   => $item->groupBy('farm_id')->count(),
+                    'total_coconut'  => $item->sum('coconut'),
+                ];
+        })->values();
+
+
+         return [
+            'coconut_sum'  => $coconut_sum,
+            'emp_group'   => $emp_group,
+        ];
+    }
+
+
+    // finction to get dashboard data
+
+    public static function dashboard_data(array $data)
+    {
+
+        $dash_farmer = Farmer_ser::get_all_farmers();
+
+        $dash_card = $dash_farmer['head_card'];
+
+        return [
+            'head_card' => $dash_card,
+        ];
+        // $today = date('Y-m-d');
+
+        // $coconut =  Coconut::whereDate('created_at', $today)->get();
+
+        // $coconut_sum = $coconut->sum('coconut');
+
+        // $farmer_count = $coconut->groupBy('farm_id')->count();
+
+        // $emp_count = $coconut->groupBy('c_by')->count();
+
+        // return [
+        //     'coconut_sum'  => $coconut_sum,
+        //     'farmer_count' => $farmer_count,
+        //     'emp_count'    => $emp_count,
+        // ];
+    }
 }

@@ -29,5 +29,24 @@ class Stock_in extends Model
         'c_by',
     ];
 
+     public function getCreatedAtAttribute($value)
+    {
+        return date('d-m-Y H:i:s', strtotime($value));
+    }
+
+    public function product_data()
+    {
+        return $this->belongsTo(Product::class, 'product_id', 'id');
+    }
+
+    public function load_data()
+    {
+        return $this->belongsTo(Prime_load::class, 'load_id', 'id');
+    }
+
+    public function farm_data()
+    {
+        return $this->belongsTo(Farmer::class, 'farm_id', 'id');
+    }
     
 }

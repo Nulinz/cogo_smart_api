@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Models\Farmer;
+use App\Models\Load;
+use App\Models\Stock_in;
+use App\Models\Farmer_cash; 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -96,8 +99,33 @@ class Farmer_ser
     {
         $data = Farmer::where('status', 'active')->orderBy('fav','DESC')->get();
 
+        $give_bal = 0;
+        $get_bal  = 0;
+
+       $give_bal = $data->where('open_type', 'give')->sum('open_bal');
+       $get_bal  = $data->where('open_type', 'get')->sum('open_bal');
+
+        $load = Load::whereNotNull('farmer_id')->get();
+
+        $stock_in = Stock_in::whereNotNull('farm_id')->get();
+
+        $merge = $load->merge($stock_in)->sortByDesc('created_at')->values();
+
+        $transactions = Farmer_cash::all();
+
+         $purchase_pending = $merge->sum('bill_amount') -  ($transactions->where('type', 'purchase')->sum('amount')) + $give_bal;
+       
+
+        $adv_pending = ($transactions->where('type', 'advance')->sum('amount'))  - ($transactions->where('type', 'advance_deduct')->sum('amount')) + $get_bal;
+
+        $head_card = [
+            'adv_card'     => $adv_pending,
+            'balance_card' => $purchase_pending,
+        ];
+
+
        // 2. Use map to iterate over each farmer and format the array
-            $farmers = $data->map(function ($farmer) {
+            $farmers = $data->map(function ($farmer) use ($adv_pending, $purchase_pending) {
                 return [
                     'farm_id'      => $farmer->id,
                     'farm_en'      => $farmer->farm_en,
@@ -105,10 +133,15 @@ class Farmer_ser
                     'location'     => $farmer->location,
                     'amount'       => 0,
                     'fav'          => $farmer->fav,
+                    'adv_card'     => $adv_pending,
+                    'balance_card' => $purchase_pending,
                 ];
             });
 
-        return $farmers;
+        return $value =[
+            'head_card' => $head_card,
+            'farmers'   => $farmers,
+        ];
     }
 
     // fucntion to get farmer profile details
@@ -117,14 +150,54 @@ class Farmer_ser
 
         $farm_id = $data['farm_id'];
 
-        $data = Farmer::select('id as farm_id','farm_en', 'farm_nick_en', 'location', 'ph_no','wp_no','fav')
+        $data = Farmer::select('id as farm_id','farm_en', 'farm_nick_en', 'location', 'ph_no','wp_no','fav','open_type','open_bal')
                 ->where('id', $farm_id)
                 ->first();
 
-        $data->amount = 0;
-        $data->balance =0;
+        $give_bal = 0;
+        $get_bal  = 0;
 
-       return $data;
+        if ($data->open_type === 'give') {
+            $give_bal = $data->open_bal;
+        } elseif ($data->open_type === 'get') {
+            $get_bal = $data->open_bal;
+        }
+    
+
+
+        $load = Load::with(['load_data:id,load_seq'])->where('farmer_id', $farm_id)->get()->map(function($item){
+           $item->table = 'e_load';
+           return $item;
+        });
+
+        $stock_in = Stock_in::where('farm_id', $farm_id)->get()->map(function($item){
+           $item->table = 'stock_in';
+           return $item;
+        });
+
+        $transactions = Farmer_cash::where('farm_id', $farm_id)->get()->map(function($item){
+           $item->table = 'farmer_cash';
+
+           return $item;
+        });
+
+        // merge load and stock in
+        $merge = $load->merge($stock_in)->sortByDesc('created_at')->values();
+        $purchase_pending = $merge->sum('bill_amount') -  ($transactions->where('type', 'purchase')->sum('amount')) + $give_bal;
+       
+
+        $adv_pending = ($transactions->where('type', 'advance')->sum('amount'))  - ($transactions->where('type', 'advance_deduct')->sum('amount')) + $get_bal;
+
+        $data->balance_card = $purchase_pending;
+        $data->adv_card = $adv_pending;
+
+        $resp =[
+            'profile' => $data,
+            'loads'   => $merge,
+            'transactions' => $transactions,
+        ];
+
+       return $resp;
     }
 
     //function to get farmer advance pending
@@ -133,15 +206,45 @@ class Farmer_ser
 
         $farm_id = $data['farm_id'];
 
-        $pending_advance = 0;
+        $pending_advance = Farmer_cash::where('farm_id', $farm_id)->where('type', 'advance')->sum('amount') 
+                         - Farmer_cash::where('farm_id', $farm_id)->where('type', 'advance_deduct')->sum('amount');
 
         // Logic to calculate pending advance can be added here
 
         return $pending_advance;
 
-        // return [
-        //     'farm_id' => $farm_id,
-        //     'pending_advance' => $pending_advance,
-        // ];
     }   
+
+    // function to process farmer pay out
+    public static function farmer_pay_out(array $data){
+
+        // Logic to process pay out can be added here
+
+        $farm_cash = Farmer_cash::create([
+            'farm_id' => $data['farm_id'],
+            'type'    => $data['type'],
+            'amount'  => $data['amount'],
+            'method'  => $data['pay_method'],
+            'c_by'    => Auth::guard('tenant')->user()->id ?? null,
+        ]);
+        
+
+       return $farm_cash;
+    }
+
+    // function to process farmer pay in
+    public static function farmer_pay_in(array $data){
+        // Logic to process pay in can be added here
+
+        $farm_cash = Farmer_cash::create([
+            'farm_id' => $data['farm_id'],
+            'type'    => $data['type'],
+            'amount'  => $data['amount'],
+            'method'  => $data['pay_method'],
+            'c_by'    => Auth::guard('tenant')->user()->id ?? null,
+        ]);
+        
+
+       return $farm_cash;
+    }
 }

@@ -29,4 +29,24 @@ class Stock_out extends Model
         'c_by',
     ];
 
+    public function getCreatedAtAttribute($value)
+    {
+        return date('d-m-Y H:i:s', strtotime($value));
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id', 'id');
+    }
+
+    public function load_data()
+    {
+        return $this->belongsTo(Prime_load::class, 'load_id', 'id');
+    }
+
+    public function party()
+    {
+        return $this->belongsTo(Party::class, 'farm_id', 'id');
+    }
+
 }

@@ -7,6 +7,7 @@ use App\Models\Load;
 use App\Models\Stock_in;  
 use App\Models\Stock_out;  
 use App\Models\Filter;
+use App\Models\Shift;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -15,27 +16,57 @@ class Load_ser
     public static function create_load(array $data)
     {
 
-        return Prime_load::create(
-           
-            [
-                // 'farm_seq' => 1,
+         $prime_load = Prime_load::find($data['prime_load'] ?? 0);
+
+         if($prime_load) {
+              // Fill the model with new data
+            $prime_load->fill([
                 'market' => $data['market'],
                 'party_id' => $data['party_id'],
-                'product_id' => $data['product_id'],
+                // 'product_id' => $data['product_id'],
                 'empty_weight' => $data['empty_weight'],
                 'load_date' => $data['load_date'],
                 'veh_no' => $data['veh_no'],
                 'dr_no' => $data['dr_no'],
                 'transporter' => $data['transporter'],
-                'quality_price' => $data['quality_price'],
+                'quality_price' => $data['quality_price'],    
                 'fliter_price' => $data['fliter_price'],
                 'req_qty' => $data['req_qty'],
                 'truck_capacity' => $data['truck_capacity'],
                 'team' => ($data['team']),
-                'status' => $data['status'] ?? 'active',
-                'c_by' => Auth::guard('tenant')->user()->id ?? null,
-            ]
-        );
+                // 'status' => $data['status'] ?? 'active',
+                // 'c_by' => Auth::guard('tenant')->user()->id ?? null,
+            ]);
+
+                // Save only if there are changes
+                if ($prime_load->isDirty()) {
+                    $prime_load->save();
+                }
+
+
+        }else{
+
+                 Prime_load::create(
+                    [
+                        // 'farm_seq' => 1,
+                        'market' => $data['market'],
+                        'party_id' => $data['party_id'],
+                        'product_id' => $data['product_id'],
+                        'empty_weight' => $data['empty_weight'],
+                        'load_date' => $data['load_date'],
+                        'veh_no' => $data['veh_no'],
+                        'dr_no' => $data['dr_no'],
+                        'transporter' => $data['transporter'],
+                        'quality_price' => $data['quality_price'],
+                        'fliter_price' => $data['fliter_price'],
+                        'req_qty' => $data['req_qty'],
+                        'truck_capacity' => $data['truck_capacity'],
+                        'team' => ($data['team']),
+                        'status' => $data['status'] ?? 'active',
+                        'c_by' => Auth::guard('tenant')->user()->id ?? null,
+                    ]
+                );
+            }
     }
 
     public static function add_load_item(array $data)
@@ -83,12 +114,13 @@ class Load_ser
     {
         $load_id = $data['load_id'];
     
-        $query = Load::with(['farmer_data:id,farm_en', 'product_data:id,name_en','load_data:id,load_seq,team'])->where('load_id', $load_id)->orderBy('id', 'desc')->get();
+        $query = Load::with(['farmer_data:id,farm_en,location', 'product_data:id,name_en','load_data:id,load_seq,veh_no,team'])->where('load_id', $load_id)->orderBy('id', 'desc')->get();
 
         $query->map(function($item){
             // $item->load_piece = 0; // Access the appended attribute to load team members
 
               $item->team_members = $item->load_data->getTeamMembersAttribute();
+              $item->table_name = 'e_load';
 
             // $item->card_billing_piece = $item->bill_piece;
             // $item->card_grace = $item->grace_piece;
@@ -99,9 +131,32 @@ class Load_ser
             return $item;
         });
 
-        $total_bill_piece  = $query->sum('bill_piece');
-        $total_grace       = $query->sum('grace_piece');
-        $total_bill_amount = $query->sum('bill_amount');
+        $grouped = $query->groupBy(function ($item) {
+            return ($item->cat === 'add' || $item->cat === 'stock') ? 'add' : 'load';
+        });
+
+        //  $get_load = $query->groupBy(function ($item) {
+        //     return $item->shift_id != null ? 'shift_from' : 'direct_add';
+        // });
+
+       
+
+        $shift = Shift::with(['load_data:id,load_seq', 'to_load:id,load_seq', 'party_data:id,party_en,party_location'])->where('load_id', $load_id)->get()
+                ->map(function ($item) {
+                        $item->table_name = 'e_shift';
+                        return $item;
+                    });
+
+        $total_bill_piece  = ($query->sum('bill_piece'))-($shift->sum('bill_piece'));
+        $total_grace       = ($query->sum('grace_piece'))-($shift->sum('grace_piece'));
+        $total_bill_amount = ($query->sum('bill_amount'))-($shift->sum('bill_amount'));
+
+         $shift_from = $grouped->get('load', collect());
+
+        $finalShift = $shift_from->concat($shift);
+
+        $load_data = Prime_load::with(['party_data:id,party_en,party_location'])->where('id', $load_id)->first();
+
 
         $summary = [
             'card_billing_piece'  => $total_bill_piece,
@@ -109,18 +164,36 @@ class Load_ser
             'card_billing_amount' => $total_bill_amount,
             ];
 
-        return [
-            'items'   => $query,
-            'summary' => $summary
-        ];
+            $items =  [
+                'load_data' => $load_data,
+                'add'   => $grouped->get('add', collect()),
+                'shift' => $finalShift,
+                'summary' => $summary,
+            ];
+
+        return $items;
     }
 
     // funcition to get individual load details
     public static function ind_load_details(array $data)
     {
         $load_item_id = $data['load_item_id'];
+
+        $type = $data['type'];
+
+        if($type=='e_shift'){
+
+            $query = Shift::with(['load_data:id,load_seq,team,party_id','to_load:id,load_seq','party_data:id,party_en'])->where('id', $load_item_id)->first();
+
+            $query->team_members = $query->load_data->getTeamMembersAttribute();
+
+        }else{
+            $query = Load::with(['farmer_data:id,farm_en,location','load_data:id,load_seq,team,party_id','load_data.party_data:id,party_en'])->where('id', $load_item_id)->first();
+
+            $query->team_members = $query->load_data->getTeamMembersAttribute();
+
+        }
     
-        $query = Load::with(['farmer_data:id,farm_en','load_data:id,load_seq,team,party_id','load_data.party_data:id,party_en'])->where('id', $load_item_id)->first();
 
         return $query;
     }
@@ -184,7 +257,7 @@ class Load_ser
         return Filter::create(
             [
                 'load_id' => $data['load_id'],
-                'emp_id' => $data['emp_id'],
+                'emp_id' => Auth::guard('tenant')->user()->id ?? null,
                 'total' => $data['total'],
                 'status' => $data['status'] ?? 'active',
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
@@ -218,4 +291,161 @@ class Load_ser
 
         return $filter;
     }
+
+    // function to store shift load item
+
+
+    public static function add_shift_item(array $data)
+    {
+        $cat = $data['cat'];
+
+        if($cat=='load'){
+
+            $shift =  Shift::create(
+                [
+                    'cat'=>$cat,
+                    'load_id' => $data['load_id'],
+                    'to_load' => $data['to_load'],
+                    'product_id' => $data['product_id'],
+                    'total_piece' => $data['total_piece'],
+                    'grace_piece' => $data['grace_piece'],
+                    'grace_per' => $data['grace_per'],
+                    'bill_piece' => $data['bill_piece'],
+                    'price' => $data['price'],
+                    'bill_amount' => $data['bill_amount'],
+                    'status' => $data['status'] ?? 'active',
+                    'c_by' => Auth::guard('tenant')->user()->id ?? null,
+                ]
+            );
+
+            $add_load = Load::create(
+                [
+                    'cat'=>$cat,
+                    'load_id' => $data['to_load'],
+                    'shift_id' => $shift->id,
+                    'product_id' => $data['product_id'],
+                    'total_piece' => $data['total_piece'],
+                    'grace_piece' => $data['grace_piece'],
+                    'grace_per' => $data['grace_per'],
+                    'bill_piece' => $data['bill_piece'],
+                    'price' => $data['price'],
+                    'bill_amount' => $data['bill_amount'],
+                    'total_amt' => $data['bill_amount'],
+                    'status' => $data['status'] ?? 'active',
+                    'c_by' => Auth::guard('tenant')->user()->id ?? null,
+                ]
+            );
+        }
+
+        elseif($cat=='others'){
+
+            $shift =  Shift::create(
+                [
+                    'cat'=>$cat,
+                    'load_id' => $data['load_id'],
+                    'party_id' => $data['party_id'],
+                    'product_id' => $data['product_id'],
+                    'total_piece' => $data['total_piece'],
+                    'grace_piece' => $data['grace_piece'],
+                    'grace_per' => $data['grace_per'],
+                    'bill_piece' => $data['bill_piece'],
+                    'price' => $data['price'],
+                    'bill_amount' => $data['bill_amount'],
+                    'status' => $data['status'] ?? 'active',
+                    'c_by' => Auth::guard('tenant')->user()->id ?? null,
+                ]
+            );
+
+        }else{
+
+            $shift = Shift::create(
+                [
+                    'cat'=>'stock',
+                    'load_id' => $data['load_id'],
+                    'product_id' => $data['product_id'],
+                    'total_piece' => $data['total_piece'],
+                    'grace_piece' => $data['grace_piece'],
+                    'grace_per' => $data['grace_per'],
+                    'bill_piece' => $data['bill_piece'],
+                    'price' => $data['price'],
+                    'bill_amount' => $data['bill_amount'],
+                    'status' => $data['status'] ?? 'active',
+                    'c_by' => Auth::guard('tenant')->user()->id ?? null,
+                ]
+            );
+
+            $add_load = Stock_in::create(
+                [
+                    'cat'=>'load',
+                    'load_id' => $data['load_id'],
+                    'product_id' => $data['product_id'],
+                    'total_piece' => $data['total_piece'],
+                    'grace_piece' => $data['grace_piece'],
+                    'grace_per' => $data['grace_per'],
+                    'bill_piece' => $data['bill_piece'],
+                    'price' => $data['price'],
+                    'bill_amount' => $data['bill_amount'],
+                    'total_amt' => $data['bill_amount'],
+                    'status' => $data['status'] ?? 'active',
+                    'c_by' => Auth::guard('tenant')->user()->id ?? null,
+                ]
+            );
+        }
+    }
+
+    // function to get load self list
+
+    public static function load_self_list(array $data)
+    {
+    
+        $query = Prime_load::find($data['load_id']);
+
+        $load_list = Prime_load::where('product_id', $query->product_id)->where('id', '!=', $data['load_id'])->select('id','load_seq')->get();
+
+        return $load_list;
+    }
+
+    // function to stock shift
+
+    public static function stock_shift(array $data)
+    {
+
+       $load =  Prime_load::where('id',$data['load_id'])->first();
+
+        $stock_create = Stock_out::create(
+            [
+                'cat'=>'load',
+                'load_id' => $data['load_id'],
+                'product_id' => $load->product_id,
+                'total_piece' => $data['total_piece'],
+                'grace_piece' => $data['grace_piece'],
+                'grace_per' => $data['grace_per'],
+                'bill_piece' => $data['bill_piece'],
+                'price' => $data['price'],
+                'bill_amount' => $data['bill_amount'],
+                'total_amt' => $data['bill_amount'],
+                'status' => $data['status'] ?? 'active',
+                'c_by' => Auth::guard('tenant')->user()->id ?? null,
+            ]
+        );
+
+        $load_create = Load::create(
+            [
+                'cat'=>'stock',
+                'load_id' => $data['load_id'],
+                'product_id' => $load->product_id,
+                'total_piece' => $data['total_piece'],
+                'grace_piece' => $data['grace_piece'],
+                'grace_per' => $data['grace_per'],
+                'bill_piece' => $data['bill_piece'],
+                'price' => $data['price'],
+                'bill_amount' => $data['bill_amount'],
+                'total_amt' => $data['bill_amount'],
+                'status' => $data['status'] ?? 'active',
+                'c_by' => Auth::guard('tenant')->user()->id ?? null,
+            ]
+        );
+
+        return ['stock'=>$stock_create,'load'=> $load_create];
+    }   
 }

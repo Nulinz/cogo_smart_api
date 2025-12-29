@@ -13,8 +13,10 @@ class Load_cnt extends Controller
 
     public function create_load(Request $request)
     {
-        Log::info('Create load request data: ', $request->all());
+        // Log::info('Create load request data: ', $request->all());
+
         $rule = [
+            'prime_load'=>'nullable|string',
             'market' => 'required|string',
             'party_id' => 'required|string',
             'empty_weight' => 'required|string',
@@ -166,6 +168,7 @@ class Load_cnt extends Controller
 
         $rule = [
             'load_item_id' => 'required|string',
+            'type' => 'required|string|in:e_load,e_shift',
         ];
         $validator = Validator::make($request->all(), $rule);
 
@@ -292,7 +295,6 @@ class Load_cnt extends Controller
     {
         $rule = [
             'load_id' => 'required|string',
-            'emp_id' => 'required|string',
             'total' => 'required|string',
         ];
 
@@ -376,4 +378,125 @@ class Load_cnt extends Controller
             ], 500);
         }
     }
+
+    // function to add_shift load items
+
+    public function add_shift_item(Request $request)
+    {
+        $rule = [
+            'cat' => 'required|string|in:load,others,stock',
+            'load_id' => 'required|string',
+            'to_load' => 'nullable|string',
+            'party_id' => 'nullable|string',
+            'product_id' => 'required|string',
+            'total_piece' => 'required|string',
+            'grace_piece' => 'required|string',
+            'grace_per' => 'required|string',
+            'bill_piece' => 'required|string',
+            'price' => 'required|string',
+            'bill_amount' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            Log::error('Validation failed in add_shift_item: ', $validator->errors()->toArray());
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $shift_item = Load_ser::add_shift_item($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Load item shifted successfully',
+                'data' => $shift_item,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Shifting load item failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    // functipon to get load self list
+
+    public function load_self_list(Request $request)
+    {
+        $rule = [
+            'load_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $loads = Load_ser::load_self_list($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $loads,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch load self list: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to create stock shift entry
+
+    public function stock_shift(Request $request)
+    {
+        $rule = [
+            'load_id' => 'required|string',
+            'total_piece' => 'required|string',
+            'grace_piece' => 'required|string',
+            'grace_per' => 'required|string',
+            'bill_piece' => 'required|string',
+            'price' => 'required|string',
+            'bill_amount' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $stock_shift = Load_ser::stock_shift($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock shift entry created successfully',
+                'data' => $stock_shift['stock'],
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Creating stock shift entry failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    
 }
