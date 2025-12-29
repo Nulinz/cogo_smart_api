@@ -28,7 +28,7 @@ Route::post('/login', [Register_cnt::class, 'login']); //--> step-2
 
 Route::post('/check_mobile_register', [Register_cnt::class, 'check_mobile']);
 
-Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
+Route::middleware(['tenant.db','jwt.auth'])->group(function () {
 
   // dashboard data
 
@@ -74,6 +74,7 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/get_load_list', [Load_cnt::class, 'get_load_list']);
     Route::post('/ind_load_list', [Load_cnt::class, 'ind_load_list']);
     Route::post('/ind_load_details', [Load_cnt::class, 'ind_load_details']);
+    Route::post('/edit_load_fetch', [Load_cnt::class, 'edit_load_fetch']);
 
     // load self list
     Route::post('/load_self_list', [Load_cnt::class, 'load_self_list']);
@@ -88,7 +89,10 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     // create a employee user
     Route::post('/create_employee', [Register_cnt::class, 'create_employee']);
     Route::post('/get_employee_list', [Register_cnt::class, 'get_employee_list']);
-    // Route::post('/get_employee_details', [Register_cnt::class, 'get_employee_details']);
+    Route::post('/get_employee_details', [Register_cnt::class, 'get_employee_details']);
+    Route::post('/edit_employee', [Register_cnt::class, 'edit_employee']);
+     Route::post('/edit_employee_details', [Register_cnt::class, 'edit_employee_details']);
+
 
     // advance related routes
     // Route::post('/add_advance', [Base_cnt::class, 'add_advance']);
@@ -118,6 +122,10 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/farmer_pay_out', [Farmer_cnt::class, 'farmer_pay_out']);
     Route::post('/farmer_pay_in', [Farmer_cnt::class, 'farmer_pay_in']);
 
+    // party transaction
+    Route::post('/party_pay_out', [Party_cnt::class, 'party_pay_out']);
+    Route::post('/party_pay_in', [Party_cnt::class, 'party_pay_in']);
+
     // coconut availabilty
 
     Route::post('/add_coconut', [Base_cnt::class, 'add_coconut']);
@@ -134,4 +142,9 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/add_invoice', [Stock_cnt::class, 'add_invoice']);
     Route::post('/get_invoice', [Stock_cnt::class, 'get_invoice']);
 
+    // add petty cash
+
+    Route::post('/add_petty',[Stock_cnt::class, 'add_petty']);
+    Route::post('/petty_cash_ind',[Stock_cnt::class, 'petty_cash_ind']);
+    Route::post('/petty_cash_ind_view_all',[Stock_cnt::class, 'petty_cash_ind_view_all']);
 });

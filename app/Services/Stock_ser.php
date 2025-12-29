@@ -10,7 +10,11 @@ use App\Models\Stock_out;
 use App\Models\Summary;
 use App\Models\M_invoice;
 use App\Models\E_invoice;
+use App\Models\Filter;
+use App\Models\Petty_cash;
+use App\Models\Farmer_cash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class Stock_ser
 {
@@ -280,7 +284,7 @@ class Stock_ser
    {
          $load_id = $data['load_id'];
     
-        $query = Load::with(['farmer_data:id,farm_en,location', 'product_data:id,name_en','load_data:id,load_seq,veh_no,team'])->where('load_id', $load_id)->orderBy('id', 'desc')->get();
+        $query = Load::with(['farmer_data:id,farm_en,location', 'product_data:id,name_en','load_data:id,load_seq,veh_no,team,party_id,empty_weight','load_data.party_data:id,party_en,party_location'])->where('load_id', $load_id)->orderBy('id', 'desc')->get();
 
         $query->map(function($item){
             // $item->load_piece = 0; // Access the appended attribute to load team members
@@ -290,6 +294,10 @@ class Stock_ser
 
             return $item;
         });
+
+        // Log::info('summary_new query: '. json_encode($query, JSON_PRETTY_PRINT));
+
+        // dd($query);
 
         // $grouped = $query->groupBy(function ($item) {
         //     return ($item->cat === 'add' || $item->cat === 'stock') ? 'add' : 'load';
@@ -318,11 +326,7 @@ class Stock_ser
 
         $shift_data = Shift::where('load_id', $load_id)->get();
 
-        // $totalBillingAmount = $shift_data->sum('billing_amount');
-
-        // $avg_rate = $shift_data->avg('price'); 
-
-        // $total_piece += $shift_data->sum('total_piece');
+        
 
 
          $summary = [
@@ -331,9 +335,12 @@ class Stock_ser
             'card_billing_amount' => $total_bill_amount,
             'card_total_piece'    => $total_piece,
             'card_total_commision'=> $total_commision,
-            'shift_avg_rate'       => round($shift_data->avg('price'),2),
-            'shift_billing_amount' => $shift_data->sum('bill_amount'),
-            'shift_total_piece'      => $shift_data->sum('total_piece'),
+            'shift_data'       => $shift_data,
+            // 'shift_billing_amount' => $shift_data->sum('bill_amount'),
+            // 'shift_total_piece'      => $shift_data->sum('total_piece'),
+            'party_data'          => $query->first()->load_data->party_data ?? null,
+            'filter_piece'        => Filter::where('load_id', $load_id)->sum('total'),
+            'load_empty_weight'   => $query->first()->load_data->empty_weight ?? null,
             ];
 
         return $summary;
@@ -408,6 +415,49 @@ class Stock_ser
         }
 
         return $m_inv;
+   }
+
+   // function to add petty cash
+
+   public static function add_petty(array $data)
+   {
+       
+
+        // Create petty cash entry
+        $petty_cash = Petty_cash::create([
+            'emp_id'      => $data['emp_id'],
+            'type'        => $data['type'],
+            'amount'      => $data['amount'],
+            'method'      => $data['method'],
+            'date'        => $data['date'],
+            'c_by'        => Auth::guard('tenant')->user()->id ?? null,
+        ]);
+
+        return $petty_cash;
+   }
+
+   // function to get petty cash individual
+
+   public static function petty_cash_ind(array $data)
+   {
+        $emp_id = $data['emp_id'] ?? null;
+
+        if(!$emp_id){
+            throw new \Exception('Employee ID is required');
+        }
+
+        $petty_list = Petty_cash::where('emp_id', $emp_id)->get();
+
+        return $petty_list;
+   }
+
+   // function to get petty cash individual view all
+
+   public static function petty_cash_ind_view_all(array $data)
+   {
+        $user_paid_list = Farmer_cash::where('c_by', $data['emp_id'])->orderBy('id','desc')->get();
+
+        return $user_paid_list;
    }
 
    // function to get invoice

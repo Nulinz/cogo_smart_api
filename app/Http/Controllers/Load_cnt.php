@@ -251,7 +251,7 @@ class Load_cnt extends Controller
         $rule = [
            'cat' => 'required|string|in:load,sales',
             'load_id' => 'required|string',
-            'farmer_id' => 'required|string',
+            'party_id' => 'required|string',
             'product_id' => 'required|string',
             'total_piece' => 'required|string',
             'grace_piece' => 'required|string',
@@ -494,6 +494,39 @@ class Load_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Creating stock shift entry failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to edit load fetch
+
+    public function edit_load_fetch(Request $request)
+    {
+        $rule = [
+            'load_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $load_data = Load_ser::edit_load_fetch($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'data' => $load_data,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch load data for editing: '.$e->getMessage(),
             ], 500);
         }
     }

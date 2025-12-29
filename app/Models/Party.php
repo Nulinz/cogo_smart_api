@@ -77,4 +77,11 @@ class Party extends Model
             $model->party_seq = $prefix . '-' . str_pad($next,$padding, '0', STR_PAD_LEFT);
         });
     }
+
+    // function for party cash relation
+
+    public function party_cash()
+    {
+        return $this->hasMany(Party_cash::class, 'party_id', 'id');
+    }
 }

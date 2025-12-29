@@ -8,6 +8,7 @@ use App\Models\Stock_in;
 use App\Models\Stock_out;  
 use App\Models\Filter;
 use App\Models\Shift;
+use App\Models\Truck_capacity;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -232,7 +233,7 @@ class Load_ser
             [
                 'cat' => $data['cat'],
                 'load_id' => $data['load_id'],
-                'farm_id' => $data['farmer_id'],
+                'farm_id' => $data['party_id'],
                 'product_id' => $data['product_id'],
                 'total_piece' => $data['total_piece'],
                 'grace_piece' => $data['grace_piece'],
@@ -448,4 +449,27 @@ class Load_ser
 
         return ['stock'=>$stock_create,'load'=> $load_create];
     }   
+
+    // function to fetch edit load data
+
+    public static function edit_load_fetch(array $data)
+    {
+        $load_id  = $data['load_id'];
+
+        if(!$load_id){
+            throw new \Exception('Load ID is required');
+        }
+
+        $load_data = Prime_load::with(['party_data:id,party_en,party_location', 'transporter:id,transport', 'truck_capacity:id,capacity'])->where('id', $load_id)->first();
+
+        $load_data->tk = $load_data->truck_capacity;
+
+        // $load_t_cap = Truck_capacity::find($load_data->truck_capacity);
+
+          // Remove original key from response
+            // unset($load_data->truck_capacity);
+
+
+        return $load_data;
+    }
 }

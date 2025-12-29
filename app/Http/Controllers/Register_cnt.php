@@ -7,6 +7,9 @@ use App\Models\Master_db;
 use App\Models\User;
 use App\Services\Otp;
 use App\Services\Tenant_db;
+use App\Services\Base_ser;
+use App\Models\Petty_cash;
+use App\Models\Farmer_cash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -258,6 +261,8 @@ class Register_cnt extends Controller
     public function login(Request $request)
     {
 
+        // dd('here');
+
         // Tenant_db::main(); // switch to main DB
 
         // $mainUser = DB::table('users')->where('phone', $request->phone)->first();
@@ -303,6 +308,15 @@ class Register_cnt extends Controller
 
             Auth::guard('tenant')->setUser($user);
 
+           // 👉 Get payload FROM the token you just created
+            $payload = JWTAuth::setToken($token)->getPayload();
+
+            // 👉 Extract expiry (exp)
+            $expiresAt = $payload->get('exp'); // UNIX timestamp
+
+            $exp = date('Y-m-d H:i:s', $expiresAt);
+
+
             // return response()->json([
             //     // 'token' => $token,
             //     // 'user' => $user,
@@ -312,6 +326,7 @@ class Register_cnt extends Controller
                 'success' => true,
                 'message' => 'Login successful',
                 'token' => $token,
+                'token_expires_at' => $exp,
                 'user' => Auth::guard('tenant')->user(),
             ]);
 
@@ -391,11 +406,16 @@ class Register_cnt extends Controller
     public function create_employee(Request $request)
     {
 
-        $payload = JWTAuth::parseToken()->getPayload();
+        // $payload = JWTAuth::parseToken()->getPayload();
+
+         $token = JWTAuth::getToken();
+            $payload =  $payload = JWTAuth::manager()
+                    ->getJWTProvider()
+                    ->decode($token);
 
         // $dbName = $payload->get('db_name');
 
-        $db = $payload->get('db_name');
+        $db = $payload['db_name'];
 
         $rule = [
             'name' => 'required|string',
@@ -475,7 +495,19 @@ class Register_cnt extends Controller
         //     ], 422);
         // }
         try{
-             $users = User::all();
+             $users = User::query()
+                    ->where('status', 'active')
+                    ->select('id', 'name', 'role','location')
+                    ->get()
+                    ->map(function ($user) {
+                       
+                        $petty_cash = Petty_cash::where('emp_id', $user['id'])->sum('amount');
+                        $user_paid_list = Farmer_cash::where('c_by', $user['id'])->sum('amount');
+
+                        $user->balance = $user_paid_list - $petty_cash;
+    
+                        return $user;
+                    });
 
         } catch (\Exception $e) {
             return response()->json([
@@ -488,6 +520,39 @@ class Register_cnt extends Controller
         return response()->json([
             'success' => true,
             'data' => $users,
+        ], 200);
+    }
+
+    // function to get employee details
+
+    public function get_employee_details(Request $request)
+    {
+        $rule = [
+             'user_id' => 'required|string',
+        ];
+        $validator = Validator::make($request->all(), $rule);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        try{
+
+            $user = Base_ser::get_employee_details($validator->validated());
+
+            //  $user = User::where('id', $request->user_id)->first();
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Database connection failed: '.$e->getMessage(),
+            ], 500);
+        }
+       
+
+        return response()->json([
+            'success' => true,
+            'data' => $user,
         ], 200);
     }
 
@@ -544,5 +609,81 @@ class Register_cnt extends Controller
             'data' => $user_data,
             'token' => $token,  
         ], 200);
+    }
+
+
+
+    // function to edit employee
+
+    public function edit_employee(Request $request)
+    {
+        $rule = [
+            'emp_id' => 'required|string',
+            'name' => 'required|string',
+            'role' => 'required|string|in:admin,emp,manager',
+            'location' => 'required|string',
+
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $user = User::where('id', $request->emp_id)->update([
+                'name' => $request->name,
+                'role' => $request->role,
+                'location' => $request->location,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Employee updated successfully',
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Employee update failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to edit employee details
+
+    public function edit_employee_details(Request $request)
+    {
+        $rule = [
+            'emp_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $user = User::where('id', $request->emp_id)->select('id','name','location','role')->first();
+            return response()->json([
+                'success' => true,
+                'message' => 'Employee details updated successfully',
+                'data' => $user,
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Employee details update failed: '.$e->getMessage(),
+            ], 500);
+        }
     }
 }

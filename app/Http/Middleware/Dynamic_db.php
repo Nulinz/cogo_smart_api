@@ -21,11 +21,31 @@ class Dynamic_db
         // Get database name from request
         // $db = $request->db_name;
 
-        $payload = JWTAuth::parseToken()->getPayload();
+        //  $payload = JWTAuth::parseToken()->getPayload();
+
+        // //  $payload = auth()->payload();
+
+        //  $payload = auth()->payload(); // Safe, no double validation
+
+        
+         $token = JWTAuth::getToken();
+
+        $payload = JWTAuth::manager()
+            ->getJWTProvider()
+            ->decode($token);
+
+        $db = $payload['db_name'] ?? null;
+
+            //  \Log::info("payload db_name: ".$db);
+
+
 
         // $dbName = $payload->get('db_name');
 
-        $db = $payload->get('db_name');
+        // $db = $payload->get('db_name');
+
+     
+      
 
         // dd($db);
 

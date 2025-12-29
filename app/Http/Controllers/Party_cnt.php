@@ -110,6 +110,7 @@ class Party_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch party list: '.$e->getMessage(),
+                'line'=>$e->getLine(),
             ], 500);
         }
     }
@@ -143,6 +144,78 @@ class Party_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch party profile: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // funciton for party pay In
+
+    public function party_pay_in(Request $request)
+    {
+        $rule = [
+            'party_id' => 'required|string',
+            'amount' => 'required|string',
+            'method' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try{
+            $party_cash = Party_ser::party_pay_in($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Party pay in successful',
+                'data' => $party_cash,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Party pay in failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for party pay Out
+
+    public function party_pay_out(Request $request)
+    {
+        $rule = [
+            'party_id' => 'required|string',
+            'amount' => 'required|string',
+            'method' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try{
+            $party_cash = Party_ser::party_pay_out($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Party pay out successful',
+                'data' => $party_cash,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Party pay out failed: '.$e->getMessage(),
             ], 500);
         }
     }

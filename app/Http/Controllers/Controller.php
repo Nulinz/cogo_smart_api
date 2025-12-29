@@ -40,9 +40,13 @@ abstract class Controller
 
         } else {
 
-            $data = JWTAuth::parseToken()->getPayload();
+            $token = JWTAuth::getToken();
+            $data =  $payload = JWTAuth::manager()
+                    ->getJWTProvider()
+                    ->decode($token);
+             // $data = JWTAuth::parseToken()->getPayload();
 
-            $db_name = $data->get('db_name');
+            $db_name = $data['db_name'] ?? null;
             Tenant_db::connect($db_name); // switch to tenant DB
 
             $model = [

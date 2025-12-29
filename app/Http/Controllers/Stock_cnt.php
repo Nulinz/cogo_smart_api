@@ -257,4 +257,98 @@ class Stock_cnt extends Controller
        
         return response()->json(['status' => 'success', 'data' => $result], 200);
     }
+
+    // function for add petty cash
+
+    public function add_petty(Request $request)
+    {
+        $rules = [
+            'emp_id' => 'required|string',
+            'type'=>'required|string|in:petty,settle',
+            'amount'=>'required|string',
+            'date' => 'required|string',
+            'method'=>'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        
+        try{
+
+            $result = Stock_ser::add_petty($validator->validated());
+
+        }catch(\Exception $e){
+
+            Log::error('Error in add_petty: '.$e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+        }
+       
+        return response()->json(['status' => 'success', 'data' => $result], 200);
+    }
+
+    // function for petty cash individual
+
+    public function petty_cash_ind(Request $request)
+    {
+        $rules = [
+            'emp_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        
+        try{
+
+            $result = Stock_ser::petty_cash_ind($validator->validated());
+
+        }catch(\Exception $e){
+
+            Log::error('Error in petty_cash_ind: '.$e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+        }
+       
+        return response()->json(['status' => 'success', 'data' => $result], 200);
+    }
+
+    // function for petty cash individual view all
+
+    public function petty_cash_ind_view_all(Request $request)
+    {
+        $rules = [
+            'emp_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        
+        try{
+
+            $result = Stock_ser::petty_cash_ind_view_all($validator->validated());
+
+        }catch(\Exception $e){
+
+            Log::error('Error in petty_cash_ind_view_all: '.$e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+        }
+       
+        return response()->json(['status' => 'success', 'data' => $result], 200);
+    }
 }

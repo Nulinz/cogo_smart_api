@@ -7,7 +7,14 @@ use App\Models\Transport;
 use App\Models\Truck_capacity;
 use App\Models\Loss;
 use App\Models\Coconut;
+use App\Models\User;
 use App\Services\Farmer_ser;
+use App\Models\Farmer_cash;
+use App\Models\Petty_cash;
+use App\Services\Party_ser;
+use App\Models\Prime_load;
+use App\Models\Filter;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -256,25 +263,67 @@ class Base_ser
 
         $dash_farmer = Farmer_ser::get_all_farmers();
 
-        $dash_card = $dash_farmer['head_card'];
+        $farmer_card = $dash_farmer['head_card'];
 
-        return [
-            'head_card' => $dash_card,
+        $dash_party = Party_ser::get_all_party();
+
+        $party_card = $dash_party['head_card'];
+
+
+
+        $prime_load = Prime_load::with(['party_data:id,party_en,party_location','load_list:id,load_id,bill_piece,farmer_id',
+                                          'shift_list:id,load_id,bill_piece',])->where('status', 'active')->orderBy('id', 'desc')->get()->map(function($item){
+
+            $item->filter = Filter::where('load_id', $item->id)->sum('total');
+
+           $add_piece   = optional($item->load_list)->sum('bill_piece') ?? 0;
+           $shift_piece = optional($item->shift_list)->sum('bill_piece') ?? 0;
+
+            $item->loaded = $add_piece - $shift_piece;
+            $item->remain  =$item->bill_piece - $item->loaded;
+
+            
+
+            $item->last_farmer = $item->load_list
+                                ?->sortByDesc('id')
+                                ->take(2)
+                                ->map(function ($load) {
+                                    return $load->farmer_data->farm_en ?? null;
+                                });
+
+            unset($item->load_list, $item->shift_list);
+
+            return $item;
+        });
+
+         return [
+            'farmer_card' => $farmer_card,
+            'party_card' => $party_card,
+            'load_data' => $prime_load,
         ];
-        // $today = date('Y-m-d');
 
-        // $coconut =  Coconut::whereDate('created_at', $today)->get();
+      
+    }
 
-        // $coconut_sum = $coconut->sum('coconut');
+    // function to get the employee details
 
-        // $farmer_count = $coconut->groupBy('farm_id')->count();
+    public static function get_employee_details(array $data)
+    {
+        $user = User::where('id', $data['user_id'])->first();
 
-        // $emp_count = $coconut->groupBy('c_by')->count();
+        $user_paid_list = Farmer_cash::where('c_by', $data['user_id'])->orderBy('id','desc')->limit(100)->get();
 
-        // return [
-        //     'coconut_sum'  => $coconut_sum,
-        //     'farmer_count' => $farmer_count,
-        //     'emp_count'    => $emp_count,
-        // ];
+        $petty_cash = Petty_cash::where('emp_id', $data['user_id'])->sum('amount');
+
+
+        $user_spent = $user_paid_list->sum('amount');
+        
+
+
+        if(!$user) {
+            throw new \Exception("User not found");
+        }
+
+        return ['user' => $user, 'user_paid' => $user_paid_list,'cash_given' => $petty_cash, 'cash_spent' => $user_spent];
     }
 }
