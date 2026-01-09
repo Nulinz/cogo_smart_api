@@ -21,10 +21,10 @@ class Stock_cnt extends Controller
         }catch(\Exception $e){
 
             Log::error('Error in stock_home: '.$e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request.'], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request.'], 500);
         }
        
-        return response()->json(['status' => 'success', 'data' => $result], 200);
+        return response()->json(['success' => true, 'data' => $result], 200);
     }
 
     // function for stock_transaction_list
@@ -38,10 +38,10 @@ class Stock_cnt extends Controller
         }catch(\Exception $e){
 
             Log::error('Error in stock_transaction_list: '.$e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request.'], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request.'], 500);
         }
        
-        return response()->json(['status' => 'success', 'data' => $result], 200);
+        return response()->json(['success' => true, 'data' => $result], 200);
     }
 
     // function for load_summary
@@ -51,6 +51,7 @@ class Stock_cnt extends Controller
         $rules = [
             'load_id' => 'required|string',
             'filter_total'=>'nullable|string',
+            'filter_billing'=>'nullable|string',
             'filter_price'=>'nullable|string',
             'filter_amount'=>'nullable|string', 
             'product_id'=>'nullable|string',
@@ -73,7 +74,7 @@ class Stock_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -85,10 +86,10 @@ class Stock_cnt extends Controller
         }catch(\Exception $e){
 
             Log::error('Error in load_summary: '.$e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
         }
        
-        return response()->json(['status' => 'success', 'data' => $result], 200);
+        return response()->json(['success' => true, 'data' => $result], 200);
     }
 
     // function for get load summary
@@ -103,7 +104,7 @@ class Stock_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -115,10 +116,10 @@ class Stock_cnt extends Controller
         }catch(\Exception $e){
 
             Log::error('Error in get_load_summary: '.$e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
         }
        
-        return response()->json(['status' => 'success', 'data' => $result], 200);
+        return response()->json(['success' => true, 'data' => $result], 200);
     }
 
     // function for edit load summary
@@ -129,6 +130,7 @@ class Stock_cnt extends Controller
             'type'=>'required|string|in:completed,draft',
             'load_id' => 'required|string',
             'filter_total'=>'nullable|string',
+            'filter_billing'=>'nullable|string',
             'filter_price'=>'nullable|string',
             'filter_amount'=>'nullable|string', 
             'product_id'=>'nullable|string',
@@ -150,8 +152,11 @@ class Stock_cnt extends Controller
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
+
+            Log::info('Validation failed in edit_load_summary: '.json_encode($validator->errors()));
+
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -163,10 +168,10 @@ class Stock_cnt extends Controller
         }catch(\Exception $e){
 
             Log::error('Error in edit_load_summary: '.$e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
         }
        
-        return response()->json(['status' => 'success', 'data' => $result], 200);
+        return response()->json(['success' => true, 'data' => $result], 200);
     }
 
     // new summary function
@@ -181,7 +186,7 @@ class Stock_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -193,10 +198,10 @@ class Stock_cnt extends Controller
         }catch(\Exception $e){
 
             Log::error('Error in summary_new: '.$e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
         }
        
-        return response()->json(['status' => 'success', 'data' => $result], 200);
+        return response()->json(['success' => true, 'data' => $result], 200);
     }
 
     // function for get stock product
@@ -210,10 +215,10 @@ class Stock_cnt extends Controller
         }catch(\Exception $e){
 
             Log::error('Error in get_stock_product: '.$e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request.'], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request.'], 500);
         }
        
-        return response()->json(['status' => 'success', 'data' => $result], 200);
+        return response()->json(['success' => true, 'data' => $result], 200);
     }
 
     // function for add invoice
@@ -240,7 +245,7 @@ class Stock_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -252,10 +257,10 @@ class Stock_cnt extends Controller
         }catch(\Exception $e){
 
             Log::error('Error in add_invoice: '.$e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
         }
        
-        return response()->json(['status' => 'success', 'data' => $result], 200);
+        return response()->json(['success' => true, 'data' => $result], 200);
     }
 
     // function for add petty cash
@@ -274,7 +279,7 @@ class Stock_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -286,10 +291,10 @@ class Stock_cnt extends Controller
         }catch(\Exception $e){
 
             Log::error('Error in add_petty: '.$e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
         }
        
-        return response()->json(['status' => 'success', 'data' => $result], 200);
+        return response()->json(['success' => true, 'data' => $result], 200);
     }
 
     // function for petty cash individual
@@ -304,7 +309,7 @@ class Stock_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -316,10 +321,10 @@ class Stock_cnt extends Controller
         }catch(\Exception $e){
 
             Log::error('Error in petty_cash_ind: '.$e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
         }
        
-        return response()->json(['status' => 'success', 'data' => $result], 200);
+        return response()->json(['success' => true, 'data' => $result], 200);
     }
 
     // function for petty cash individual view all
@@ -334,7 +339,7 @@ class Stock_cnt extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -346,9 +351,71 @@ class Stock_cnt extends Controller
         }catch(\Exception $e){
 
             Log::error('Error in petty_cash_ind_view_all: '.$e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
         }
        
-        return response()->json(['status' => 'success', 'data' => $result], 200);
+        return response()->json(['success' => true, 'data' => $result], 200);
+    }
+
+    // function for update_loss_invoice
+
+    public function update_loss_invoice(Request $request)
+    {
+        $rules = [
+            'load_id' => 'required|numeric',
+            'final_loss'=>'required|array',
+            'profit_loss'=>'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        
+        try{
+
+            $result = Stock_ser::update_loss_invoice($validator->validated());
+
+        }catch(\Exception $e){
+
+            Log::error('Error in update_loss_invoice: '.$e->getMessage());
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+        }
+       
+        return response()->json(['success' => true, 'data' => $result], 200);
+    }
+
+    // function for get invoice
+
+    public function get_invoice(Request $request)
+    {
+        $rules = [
+            'load_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        
+        try{
+
+            $result = Stock_ser::get_invoice($validator->validated());
+
+        }catch(\Exception $e){
+
+            Log::error('Error in get_invoice: '.$e->getMessage());
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+        }
+       
+        return response()->json(['success' => true, 'data' => $result], 200);
     }
 }

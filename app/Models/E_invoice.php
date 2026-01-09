@@ -21,4 +21,19 @@ class E_invoice extends Model
         'status',
         'c_by'
     ];
+
+    public function invoice()
+    {
+        return $this->belongsTo(M_invoice::class, 'inv_id');
+    }
+
+    public function load_data()
+    {
+        return $this->belongsTo(Prime_load::class, 'load_id');
+    }
+
+    public function product_data()
+    {
+        return $this->belongsTo(Product::class, 'product');
+    }
 }

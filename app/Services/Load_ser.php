@@ -9,6 +9,9 @@ use App\Models\Stock_out;
 use App\Models\Filter;
 use App\Models\Shift;
 use App\Models\Truck_capacity;
+use App\Models\Summary;
+use App\Models\M_invoice;
+use App\Services\Farmer_ser;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -72,7 +75,7 @@ class Load_ser
 
     public static function add_load_item(array $data)
     {
-        return Load::create(
+        $load_create =  Load::create(
             [
                 'cat'=>'add',
                 'load_id' => $data['load_id'],
@@ -92,14 +95,35 @@ class Load_ser
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
             ]
         );
+
+        if($data['adv'] > 0){
+            // update farmer advance
+
+            $farmer = Farmer_ser::farmer_pay_in(['farm_id' => $data['farmer_id'],'amount' => $data['adv'], 'type' => 'advance_deduct']);
+
+        }
+
+        return $load_create;
     }
 
     public static function get_load_list()
     {
-        $query = Prime_load::with(['party_data:id,party_en', 'transporter:id,transport', 'truck_capacity:id,capacity'])->orderBy('id', 'desc')->get();
+        $query = Prime_load::with(['party_data:id,party_en', 'transporter:id,transport', 'truck_capacity:id,capacity']);
+        
+        if(Auth::guard('tenant')->user()->role != 'admin'){
+            $query->WhereJsonContains('team', [Auth::guard('tenant')->user()->id]);
+        }
+        
+        $query = $query->orderBy('id', 'desc')->get();
+
+        // \Log::info('Load List Query: ', $query->toArray());
 
         $query->map(function($item){
-            $item->load_piece = 0; // Access the appended attribute to load team members
+            // $item->load_piece = 0; // Access the appended attribute to load team members
+
+                   $load_data = Self::ind_load_list(['load_id'=>$item->id]);
+
+            $item->load_piece = $load_data['summary']['card_billing_piece'] + $load_data['summary']['card_grace'];
 
              $item->team_members = $item->getTeamMembersAttribute();
 
@@ -115,7 +139,7 @@ class Load_ser
     {
         $load_id = $data['load_id'];
     
-        $query = Load::with(['farmer_data:id,farm_en,location', 'product_data:id,name_en','load_data:id,load_seq,veh_no,team'])->where('load_id', $load_id)->orderBy('id', 'desc')->get();
+        $query = Load::with(['farmer_data:id,farm_en,location', 'product_data:id,name_en','load_data:id,load_seq,veh_no,team','shift_load_data.load_data:id,load_seq'])->where('load_id', $load_id)->orderBy('id', 'desc')->get();
 
         $query->map(function($item){
             // $item->load_piece = 0; // Access the appended attribute to load team members
@@ -123,11 +147,19 @@ class Load_ser
               $item->team_members = $item->load_data->getTeamMembersAttribute();
               $item->table_name = 'e_load';
 
+              if($item->shift_id != null){
+                $item->shift_load_seq = $item->shift_load_data ? $item->shift_load_data->load_data->load_seq : null;
+              }
+              else{
+                $item->shift_load_seq = null;
+              }
+
+
             // $item->card_billing_piece = $item->bill_piece;
             // $item->card_grace = $item->grace_piece;
             // $item->card_billing_amount = $item->bill_amount;            
 
-            //   unset()
+               unset($item->shift_load_data);
 
             return $item;
         });
@@ -157,6 +189,9 @@ class Load_ser
         $finalShift = $shift_from->concat($shift);
 
         $load_data = Prime_load::with(['party_data:id,party_en,party_location'])->where('id', $load_id)->first();
+
+        $load_data->load_summary =  Summary::where('load_id', $load_id)->count();
+        $load_data->load_invoice = M_invoice::where('load_id', $load_id)->count();
 
 
         $summary = [

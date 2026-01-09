@@ -46,6 +46,11 @@ class Load extends Model
         return $this->belongsTo(Prime_load::class, 'load_id', 'id');
     }
 
+     public function shift_load_data()
+    {
+        return $this->belongsTo(Shift::class, 'shift_id', 'id');
+    }
+
     public function getCreatedAtAttribute($value)
     {
         return date('d-m-Y H:i:s', strtotime($value));

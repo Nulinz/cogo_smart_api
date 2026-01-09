@@ -67,6 +67,8 @@ class Load_cnt extends Controller
     {
         // Method implementation here
 
+        
+
         $rule = [
             'load_id' => 'required|string',
             'farmer_id' => 'required|string',
@@ -75,7 +77,7 @@ class Load_cnt extends Controller
             'grace_piece' => 'required|string',
             'grace_per' => 'required|string',
             'bill_piece' => 'required|string',
-            'price' => 'required|string',
+            'price' => 'required|numeric',
             'commission' => 'required|string',
             'bill_amount' => 'required|string',
             'adv' => 'required|string',
@@ -83,11 +85,13 @@ class Load_cnt extends Controller
             'total_amt' => 'required|string',
         ];
 
-        // log::info( 'Add load item request data: ' . json_encode($request->all(), JSON_PRETTY_PRINT));
+      
 
         $validator = Validator::make($request->all(), $rule);
 
         if ($validator->fails()) {
+              Log::info( 'Add load item request data: ' . json_encode($request->all(), JSON_PRETTY_PRINT));
+              Log::error('Validation failed in add_load_item: ', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors(),
@@ -203,8 +207,8 @@ class Load_cnt extends Controller
         // Method implementation here
 
         $rule = [
-            'cat' => 'required|string|in:load,manual',
-            'load_id' => 'required|string',
+            'cat' => 'required|string|in:load,manual,purchase',
+            'load_id' => 'nullable|string',
             'farmer_id' => 'required|string',
             'product_id' => 'required|string',
             'total_piece' => 'required|string',
@@ -214,13 +218,15 @@ class Load_cnt extends Controller
             'price' => 'required|string',
             'commission' => 'required|string',
             'bill_amount' => 'required|string',
-            'adv' => 'required|string',
+            'adv' => 'nullable|string',
             'quality' => 'required|string',
             'total_amt' => 'required|string',
         ];
         $validator = Validator::make($request->all(), $rule);
 
         if ($validator->fails()) {
+            \Log::info( 'Add purchase request data: ' . json_encode($request->all(), JSON_PRETTY_PRINT));
+            \Log::error('Validation failed in add_purchase: ', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors(),

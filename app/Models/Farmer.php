@@ -22,6 +22,7 @@ class Farmer extends Model
         'wp_no',
         'open_type',
         'open_bal',
+        'adv_prime',
         'acc_type',
         'b_name',
         'acc_name',

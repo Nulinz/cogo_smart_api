@@ -229,19 +229,19 @@ class Register_cnt extends Controller
                 ], 404);
             }
 
-            if($mainUser->otp_verified != 'yes') {
+            // if($mainUser->otp_verified != 'yes') {
 
-                Tenant_db::connect($mainUser->db_name); // switch to tenant DB
+            //     Tenant_db::connect($mainUser->db_name); // switch to tenant DB
 
-                $user_data = User::where('phone', $request->phone)->first();
+            //     $user_data = User::where('phone', $request->phone)->first();
 
-                return response()->json([
-                    'success' => false,
-                    'message' => 'OTP not verified',
-                    'data'=>$user_data->role
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'OTP not verified',
+            //         'data'=>$user_data->role
                     
-                ], 403);
-            }
+            //     ], 403);
+            // }
 
             return response()->json([
                 'success' => true,

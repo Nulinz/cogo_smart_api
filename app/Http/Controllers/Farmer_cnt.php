@@ -31,12 +31,16 @@ class Farmer_cnt extends Controller
             'acc_no' => 'required|string',
             'ifsc' => 'required|string',
             'upi' => 'required|string',
+            'adv' => 'nullable|string',
 
         ];
 
         $validator = Validator::make($request->all(), $rule);
 
         if ($validator->fails()) {
+
+            \Log::error('Validation failed in create_farm: ', $validator->errors()->toArray());
+
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors(),
@@ -45,7 +49,7 @@ class Farmer_cnt extends Controller
 
         try {
 
-            $farmer = Farmer_ser::create_farm($request->all());
+            $farmer = Farmer_ser::create_farm($validator->validated());
 
             return response()->json([
                 'success' => true,

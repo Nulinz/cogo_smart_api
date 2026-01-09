@@ -13,6 +13,7 @@ class Summary extends Model
     protected $fillable = [
         'load_id',
         'filter_total',
+        'filter_billing',
         'filter_price',
         'filter_amount',
         'product_id',

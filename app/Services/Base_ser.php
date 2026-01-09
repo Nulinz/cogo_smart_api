@@ -14,6 +14,8 @@ use App\Models\Petty_cash;
 use App\Services\Party_ser;
 use App\Models\Prime_load;
 use App\Models\Filter;
+use App\Models\Expense_cat;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -111,6 +113,31 @@ class Base_ser
 
     }
 
+    // add function for expense category
+
+    public static function create_expense_cat(array $data)
+    {
+        if (isset($data['expense_id'])) {
+            // UPDATE: only status
+            if (isset($data['status'])) {
+                return Expense_cat::where('id', $data['expense_id'])->update([            
+                    'status' => $data['status'] ?? 'active',
+                ]);
+            } else {
+                return Expense_cat::where('id', $data['expense_id'])->update([
+                    'cat' => $data['cat'],
+                ]);
+            }
+        } else {
+            // CREATE: full insert
+            return Expense_cat::create([
+                'cat' => $data['cat'],
+                'status' => $data['status'] ?? 'active',
+                'c_by' => Auth::guard('tenant')->user()->id ?? null,
+            ]);
+        }
+    }
+
     // function to create loss category
 
     public static function create_loss(array $data)
@@ -164,6 +191,13 @@ class Base_ser
                     }else{
                         return Loss::where('status', $data['status'])->get();
                     }
+
+                case 'expense':
+                    if($data['status']=='all'){
+                        return Expense_cat::all();
+                    }else{
+                        return Expense_cat::where('status', $data['status'])->get();
+                    }
                 default:
                     return null;
                    
@@ -186,6 +220,8 @@ class Base_ser
                     return Truck_capacity::where('id', $data['id'])->first();
                 case 'loss':
                     return Loss::where('id', $data['id'])->first();
+                case 'expense':
+                    return Expense_cat::where('id', $data['id'])->first();
                 default:
                     return null;
                     // throw new \InvalidArgumentException("Invalid type: $type");
@@ -271,13 +307,21 @@ class Base_ser
 
 
 
-        $prime_load = Prime_load::with(['party_data:id,party_en,party_location','load_list:id,load_id,bill_piece,farmer_id',
-                                          'shift_list:id,load_id,bill_piece',])->where('status', 'active')->orderBy('id', 'desc')->get()->map(function($item){
+        $prime_load = Prime_load::with(['party_data:id,party_en,party_location','load_list:id,load_id,bill_piece,grace_piece,total_piece,farmer_id',
+                                          'shift_list:id,load_id,bill_piece,grace_piece,total_piece',])->where('status', 'active');
+
+        if(Auth::guard('tenant')->user()->role != 'admin'){
+
+            $prime_load->WhereJsonContains('team', [Auth::guard('tenant')->user()->id]);
+        }
+                                          
+                                          
+           $prime_load = $prime_load->orderBy('id', 'desc')->get()->map(function($item){
 
             $item->filter = Filter::where('load_id', $item->id)->sum('total');
 
-           $add_piece   = optional($item->load_list)->sum('bill_piece') ?? 0;
-           $shift_piece = optional($item->shift_list)->sum('bill_piece') ?? 0;
+           $add_piece   = (optional($item->load_list)->sum('total_piece')) ?? 0;
+           $shift_piece = (optional($item->shift_list)->sum('total_piece')) ?? 0;
 
             $item->loaded = $add_piece - $shift_piece;
             $item->remain  =$item->bill_piece - $item->loaded;
@@ -296,10 +340,23 @@ class Base_ser
             return $item;
         });
 
+        if(Auth::guard('tenant')->user()->role != 'admin'){
+
+            $petty_cash = 0;
+        }else{
+            $petty_cash_sum = Petty_cash::where('emp_id', Auth::guard('tenant')->user()->id)->sum('amount');
+
+            $farmer_cash = Farmer_cash::where('c_by', Auth::guard('tenant')->user()->id)->sum('amount');
+
+            $petty_cash = $petty_cash_sum - $farmer_cash;
+        }
+
+
          return [
             'farmer_card' => $farmer_card,
             'party_card' => $party_card,
             'load_data' => $prime_load,
+            'petty_cash' => $petty_cash ?? 0,
         ];
 
       
@@ -311,7 +368,7 @@ class Base_ser
     {
         $user = User::where('id', $data['user_id'])->first();
 
-        $user_paid_list = Farmer_cash::where('c_by', $data['user_id'])->orderBy('id','desc')->limit(100)->get();
+        $user_paid_list = Farmer_cash::with(['farm_data:id,farm_en,location'])->where('c_by', $data['user_id'])->orderBy('id','desc')->limit(100)->get();
 
         $petty_cash = Petty_cash::where('emp_id', $data['user_id'])->sum('amount');
 

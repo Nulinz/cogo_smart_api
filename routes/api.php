@@ -7,6 +7,7 @@ use App\Http\Controllers\Product_cnt;
 use App\Http\Controllers\Register_cnt;
 use App\Http\Controllers\Load_cnt;
 use App\Http\Controllers\Stock_cnt;
+use App\Http\Controllers\Exp_cnt;
 use Illuminate\Support\Facades\Route;
 
 // Route::post('/new', function () {
@@ -141,10 +142,21 @@ Route::middleware(['tenant.db','jwt.auth'])->group(function () {
     // add invoice
     Route::post('/add_invoice', [Stock_cnt::class, 'add_invoice']);
     Route::post('/get_invoice', [Stock_cnt::class, 'get_invoice']);
+    Route::post('/update_loss_invoice', [Stock_cnt::class, 'update_loss_invoice']);
 
     // add petty cash
 
     Route::post('/add_petty',[Stock_cnt::class, 'add_petty']);
     Route::post('/petty_cash_ind',[Stock_cnt::class, 'petty_cash_ind']);
     Route::post('/petty_cash_ind_view_all',[Stock_cnt::class, 'petty_cash_ind_view_all']);
+
+    // Route to expenses
+    Route::post('/create_expense', [Exp_cnt::class, 'create_expense']);
+    Route::post('/expense_created_list', [Exp_cnt::class, 'expense_created_list']);
+    Route::post('/expense_pay_out', [Exp_cnt::class, 'expense_pay_out']);
+    Route::post('/expense_status_update', [Exp_cnt::class, 'expense_status_update']); 
+    Route::post('/expense_home', [Exp_cnt::class, 'expense_home']);
+    Route::post('/expense_week', [Exp_cnt::class, 'expense_week']);
+    Route::post('/expense_emp_profile', [Exp_cnt::class, 'expense_emp_profile']);
+
 });

@@ -33,6 +33,7 @@ class Prime_load extends Model
         'truck_capacity',
         'team',
         'status',
+        'load_status',
         'c_by',
     ];
 

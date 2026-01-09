@@ -177,6 +177,7 @@ class Stock_ser
         $summmary = Summary::create([
             'load_id'         => $load_id,
             'filter_total'     => $data['filter_total'] ?? null,
+            'filter_billing'   => $data['filter_billing'] ?? null,
             'filter_price'    => $data['filter_price'] ?? null,
             'filter_amount'   => $data['filter_amount'] ?? null,
             'product_id'      => $data['product_id'] ?? null,
@@ -196,6 +197,31 @@ class Stock_ser
             'c_by'            => Auth::guard('tenant')->user()->id ?? null,
         ]);
 
+          if($data['type']=='completed'){
+
+                $grace_piece = round($data['grace_new'] * $summary->filter_total);
+
+                $load_status_update = Prime_load::where('id', $summary->load_id)->first();
+                $load_status_update->load_status = 'sum_completed';
+                $load_status_update->save();
+
+
+
+                $stock_in = Stock_in::create([
+                    'cat'      => 'filter',
+                    'product_id'    => $summary->product_id,
+                    'load_id'       => $summary->load_id,
+                    'total_piece'   => $summary->filter_total,
+                    'grace_piece'   => $grace_piece,
+                    'grace_per'     => $data['grace_new'],
+                    'bill_piece'    => $summary->filter_total - $grace_piece,
+                    'price'         => $summary->filter_price,
+                    'bill_amount'   => $summary->filter_amount,
+                    'c_by'          => Auth::guard('tenant')->user()->id ?? null,
+                ]);
+            }
+
+      
      
         return $summmary;
 
@@ -206,6 +232,7 @@ class Stock_ser
 
    public static function get_load_summary(array $data)
    {
+        // \Log::info('get_load_summary data: '. json_encode($data, JSON_PRETTY_PRINT));
         $load_id = $data['load_id'];
 
         $summary = Summary::where('load_id', $load_id)->first();
@@ -221,6 +248,7 @@ class Stock_ser
 
    public static function edit_load_summary(array $data)
    {
+    // Log::info('edit_load_summary data: '. json_encode($data, JSON_PRETTY_PRINT));
         $load_id = $data['load_id'];
 
         $summary = Summary::where('load_id', $load_id)->first();
@@ -231,6 +259,7 @@ class Stock_ser
 
          $summary->fill([
                 'filter_total' => $data['filter_total'] ?? $summary->filter_total,
+                'filter_billing' => $data['filter_billing'] ?? $summary->filter_billing,
                 'filter_price' => $data['filter_price'] ?? $summary->filter_price,
                 'filter_amount' => $data['filter_amount'] ?? $summary->filter_amount,
                 'product_id' => $data['product_id'] ?? $summary->product_id,
@@ -256,7 +285,11 @@ class Stock_ser
 
             if($data['type']=='completed'){
 
-                $grace_piece = ($data['grace_new'] * $summary->filter_total);
+                $grace_piece = round($data['grace_new'] * $summary->filter_total);
+
+                $load_status_update = Prime_load::where('id', $summary->load_id)->first();
+                $load_status_update->load_status = 'sum_completed';
+                $load_status_update->save();
 
 
 
@@ -394,9 +427,6 @@ class Stock_ser
         ]);
 
 
-        $m_inv->save();
-
-
         foreach($data['product_list'] as $pr){
 
             $e_inv =  E_invoice::create([
@@ -413,7 +443,9 @@ class Stock_ser
 
             $e_inv->save();
         }
-
+          // ✅ Update Prime Load status ONLY AFTER invoice success
+        Prime_load::where('id', $load_id)->update(['load_status' => 'inv_completed']);
+        
         return $m_inv;
    }
 
@@ -460,22 +492,44 @@ class Stock_ser
         return $user_paid_list;
    }
 
-   // function to get invoice
+   // function to update invoice
 
-//    public static function get_invoice(array $data)
-//    {
-//         $load_id = $data['load_id'];
+   public static function update_loss_invoice(array $data)
+   {
+        $load_id = $data['load_id'];
 
-//         $load = Load::where('id', $load_id)->first();
+        $m_inv = M_invoice::where('load_id', $load_id)->first();
 
-//         if(!$load){
-//             throw new \Exception('Load not found');
-//         }
+        if(!$m_inv){
+            throw new \Exception('Invoice not found');
+        }
 
-//         return [
-//             'invoice_no'   => $load->invoice_no,
-//             'invoice_date' => $load->invoice_date,
-//         ];
-//    }
+        $m_inv->fill([
+            'final_loss'   => $data['final_loss'] ?? $m_inv->final_loss,
+            'profit_loss'  => $data['profit_loss'] ?? $m_inv->profit_loss,
+        ]);
+
+        // Save only if there are changes
+        if ($m_inv->isDirty()) {
+            $m_inv->save();
+        }
+
+        return $m_inv;
+   }
+
+   public static function get_invoice(array $data)
+   {
+        $load_id = $data['load_id'];
+
+        $invoice = M_invoice::where('load_id', $load_id)->exists() ? M_invoice::where('load_id', $load_id)->with(['invoice_items','load_data','invoice_items.product_data:id,name_en'])->orderby('id','desc')->first() : null;
+
+        $invoice->exists_check = M_invoice::where('load_id', $load_id)->exists() ? true : false;
+
+        if(!$invoice){
+            throw new \Exception('Invoice not found');
+        }
+
+        return $invoice;
+   }
     
 }

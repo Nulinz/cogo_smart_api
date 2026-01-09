@@ -15,10 +15,10 @@ class Base_cnt extends Controller
     {
         // Logic to create quality
 
-        Log::info("message", ['request' => $request->all()]);
+        // Log::info("message", ['request' => $request->all()]);
       
 
-            if( $request->filled('transport_id') || $request->filled('truck_id') || $request->filled('quality_id') || $request->filled('loss_id') ){
+            if( $request->filled('transport_id') || $request->filled('truck_id') || $request->filled('quality_id') || $request->filled('loss_id') || $request->filled('expense_id') ){
 
                 $rulesMap = [
                         'quality' => [
@@ -34,6 +34,9 @@ class Base_cnt extends Controller
                         ],
                         'loss' => [
                             'loss_id' => 'required|string',
+                        ],
+                        'expense' => [
+                            'expense_id' => 'required|string',
                         ],
                     ];
             }else{
@@ -53,6 +56,9 @@ class Base_cnt extends Controller
                     ],
                     'loss' => [
                         'loss' => 'required|string',
+                    ],
+                    'expense' => [
+                        'cat' => 'required|string',
                     ],
                 ];
             }
@@ -84,7 +90,10 @@ class Base_cnt extends Controller
                 $quality = Base_ser::create_truck($request->all());
             } elseif ($request->type == 'loss') {
                 $quality = Base_ser::create_loss($request->all());
-            } else {
+            }else if( $request->type == 'expense') {
+                $quality = Base_ser::create_expense_cat($request->all());
+            }
+            else {
 
                 $quality = Base_ser::create_quality($request->all());
             }
@@ -109,7 +118,7 @@ class Base_cnt extends Controller
     public function get_common_list(Request $request)
     {
         $rules = [
-            'type' => 'required|string|in:quality,transport,truck,loss',
+            'type' => 'required|string|in:quality,transport,truck,loss,expense',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -143,7 +152,7 @@ class Base_cnt extends Controller
     {
         // Logic to edit quality, transport, truck can be added here
     $rules = [
-            'type' => 'required|string|in:quality,transport,truck,loss',
+            'type' => 'required|string|in:quality,transport,truck,loss,expense',
             'id' => 'required|string',
         ];
 

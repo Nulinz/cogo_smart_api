@@ -25,4 +25,9 @@ class Farmer_cash extends Model
         return date('d-m-Y H:i:s', strtotime($value));
     }
 
+    public function farm_data()
+    {
+        return $this->belongsTo(Farmer::class, 'farm_id', 'id');
+    }
+
 }
