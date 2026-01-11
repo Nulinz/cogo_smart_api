@@ -537,5 +537,82 @@ class Load_cnt extends Controller
         }
     }
 
+    // function to edit load item
+
+    public function edit_load_item(Request $request)
+    {
+        // $rule = [
+        //     'load_item_id' => 'required|string',
+        //     'total_piece' => 'required|string',
+        //     'grace_piece' => 'required|string',
+        //     'grace_per' => 'required|string',
+        //     'bill_piece' => 'required|string',
+        //     'price' => 'required|string',
+        //     'commission' => 'required|string',
+        //     'bill_amount' => 'required|string',
+        //     'adv' => 'required|string',
+        //     'quality' => 'required|string',
+        //     'total_amt' => 'required|string',
+        // ];
+
+        // $validator = Validator::make($request->all(), $rule);
+
+        // if ($validator->fails()) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'errors' => $validator->errors(),
+        //     ], 422);
+        // }
+
+        try {
+            $load_item = Load_ser::edit_load_item($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Load item updated successfully',
+                'data' => $load_item,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Updating load item failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to fetch load item data for editing
+
+    public function edit_load_item_fetch(Request $request)
+    {
+        $rule = [
+            'load_item_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $load_item_data = Load_ser::edit_load_item_fetch($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'data' => $load_item_data,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch load item data for editing: '.$e->getMessage(),
+            ], 500);
+        }
+    }   
+
     
 }

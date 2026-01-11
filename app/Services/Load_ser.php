@@ -510,4 +510,44 @@ class Load_ser
 
         return $load_data;
     }
+
+    // function to edit load item
+
+    public static function edit_load_item(array $data)
+    {
+        $load_item = Load::find($data['load_item_id']);
+
+        if (!$load_item) {
+            throw new \Exception('Load item not found');
+        }
+
+        $load_item->total_piece = $data['total_piece'];
+        $load_item->grace_piece = $data['grace_piece'];
+        $load_item->grace_per = $data['grace_per'];
+        $load_item->bill_piece = $data['bill_piece'];
+        $load_item->price = $data['price'];
+        $load_item->commission = $data['commission'];
+        $load_item->bill_amount = $data['bill_amount'];
+        $load_item->adv = $data['adv'];
+        $load_item->quality = $data['quality'];
+        $load_item->total_amt = $data['total_amt'];
+        $load_item->save();
+
+        return $load_item;
+    }
+
+    // function to fetch edit load item data
+
+    public static function edit_load_item_fetch(array $data)
+    {
+        $load_item_id  = $data['load_item_id'];
+
+        if(!$load_item_id){
+            throw new \Exception('Load Item ID is required');
+        }
+
+        $load_item_data = Load::with(['farmer_data:id,farm_en,location', 'product_data:id,name_en'])->where('id', $load_item_id)->first();
+
+        return $load_item_data;
+    }
 }

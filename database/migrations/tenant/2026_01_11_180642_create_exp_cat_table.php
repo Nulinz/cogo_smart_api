@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('exp_cat', function (Blueprint $table) {
             $table->id();
-            $table->sting('exp_cat',200)->nullable();
+            $table->string('exp_cat',200)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->unsignedBigInteger('c_by')->nullable();
             $table->timestamps();

@@ -43,10 +43,24 @@ class Tenant_db
         DB::purge('tenant');
         DB::reconnect('tenant');
 
-        Artisan::call('migrate', [
-            '--database' => 'tenant',
-            '--path' => '/database/migrations/tenant',
-            '--force' => true,
+        try{
+            Artisan::call('migrate', [
+                '--database' => 'tenant',
+                '--path' => 'database/migrations/tenant',
+                '--force' => true,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Migration failed for tenant DB '.$dbName.': '.$e->getMessage());
+
+             \Log::error('Tenant migration failed', [
+            'database' => $dbName,
+            'message'  => $e->getMessage(),
+            'file'     => $e->getFile(),
+            'line'     => $e->getLine(),
+            'trace'    => $e->getTraceAsString(),
         ]);
+
+            throw $e;
+        }
     }
 }

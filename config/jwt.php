@@ -89,7 +89,7 @@ return [
     |
     */
 
-    'ttl' => (int) env('JWT_TTL', 60),
+    'ttl' => (int) env('JWT_TTL', 1440), // 1 day  for normal api token expire time
 
     /*
     |--------------------------------------------------------------------------
@@ -118,7 +118,7 @@ return [
     */
 
     'refresh_iat' => env('JWT_REFRESH_IAT', false),
-    'refresh_ttl' => (int) env('JWT_REFRESH_TTL', 20160),
+    'refresh_ttl' => (int) env('JWT_REFRESH_TTL', 43200 ), // 30 days  for login session relogin again
 
     /*
     |--------------------------------------------------------------------------

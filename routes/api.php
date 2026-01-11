@@ -20,6 +20,10 @@ Route::post('/update_popup',function () {
     return response()->json(['version' => '0.0.1']);
 });
 
+
+// auth refrehh token
+Route::post('/refresh', [Register_cnt::class, 'refresh_token']);
+
 // register
 Route::post('/register', [Register_cnt::class, 'register']);
 Route::post('/generate_otp', [Register_cnt::class, 'generate_otp']);
@@ -76,6 +80,8 @@ Route::middleware(['tenant.db','jwt.auth'])->group(function () {
     Route::post('/ind_load_list', [Load_cnt::class, 'ind_load_list']);
     Route::post('/ind_load_details', [Load_cnt::class, 'ind_load_details']);
     Route::post('/edit_load_fetch', [Load_cnt::class, 'edit_load_fetch']);
+     Route::post('/edit_load_item', [Load_cnt::class, 'edit_load_item']);
+     Route::post('/edit_load_item_fetch', [Load_cnt::class, 'edit_load_item_fetch']);
 
     // load self list
     Route::post('/load_self_list', [Load_cnt::class, 'load_self_list']);

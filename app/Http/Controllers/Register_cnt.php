@@ -20,6 +20,30 @@ use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class Register_cnt extends Controller
 {
+    // function to refresh token
+    public function refresh_token()
+    {
+          // both error occur 401
+
+
+            //{"error": "token_expired"},{"error": "session_expired"} -----------------------
+
+        try {
+            $newToken = JWTAuth::refresh(JWTAuth::getToken());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Token refreshed successfully',
+                'token' => $newToken,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token refresh failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
     // option to generate otp
     public function generate_otp(Request $request)
     {
@@ -40,6 +64,8 @@ class Register_cnt extends Controller
             $otp = rand(100000, 999999);
 
             // app(Otp::class)->sendOtp($request->phone, $otp);
+
+            \Log::info("OTP for ".$request->phone." is ".$otp);
 
             Tenant_db::main(); // switch to main DB
             $masterUser = DB::table('users')->where('phone', $request->phone)->first();
@@ -137,6 +163,7 @@ class Register_cnt extends Controller
                 ]);
 
             } catch (\Exception $e) {
+                \Log::error('Tenant DB creation failed: '.$e->getMessage());
                 return response()->json([
                     'success' => false,
                     'message' => 'Database connection failed: '.$e->getMessage(),
@@ -151,6 +178,7 @@ class Register_cnt extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+            \Log::error('User registration failed: '.$e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'User registration failed: '.$e->getMessage(),
