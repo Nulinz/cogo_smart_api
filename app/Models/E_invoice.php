@@ -36,4 +36,9 @@ class E_invoice extends Model
     {
         return $this->belongsTo(Product::class, 'product');
     }
+
+    public function getCreatedAtAttribute($value)
+    {
+        return date('Y-m-d H:i:s', strtotime($value));
+    }   
 }

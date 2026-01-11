@@ -256,7 +256,7 @@ class Load_cnt extends Controller
     {
         $rule = [
            'cat' => 'required|string|in:load,sales',
-            'load_id' => 'required|string',
+            'load_id' => 'nullable|string',
             'party_id' => 'required|string',
             'product_id' => 'required|string',
             'total_piece' => 'required|string',
@@ -264,10 +264,10 @@ class Load_cnt extends Controller
             'grace_per' => 'required|string',
             'bill_piece' => 'required|string',
             'price' => 'required|string',
-            'commission' => 'required|string',
+            'commission' => 'nullable|string',
             'bill_amount' => 'required|string',
-            'adv' => 'required|string',
-            'quality' => 'required|string',
+            'adv' => 'nullable|string',
+            'quality' => 'nullable|string',
             'total_amt' => 'required|string',
         ];
         $validator = Validator::make($request->all(), $rule);

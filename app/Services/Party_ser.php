@@ -9,6 +9,7 @@ use App\Models\Stock_out;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Party_cash;
+use Carbon\Carbon;
 
 class Party_ser
 {
@@ -79,94 +80,174 @@ class Party_ser
 
     // fetch party list
 
-    public static function get_all_party()
-    {
-        $data =  Party::where('status','active')->orderBy('fav','DESC')->get()->map(function($item){
+    // public static function get_all_party()
+    // {
+    //     $data =  Party::where('status','active')->orderBy('fav','DESC')->get()->map(function($item){
 
-             $give_bal = 0;
-             $get_bal  = 0;
+    //          $give_bal = 0;
+    //          $get_bal  = 0;
 
-            $party_cash_ind = Party_cash::where('party_id', $item->id)->select('id','type','amount','method','created_at')->get();
+    //         $party_cash_ind = Party_cash::where('party_id', $item->id)->select('id','type','amount','method','created_at')->get();
 
-            $party_load_ind = Prime_load::where('party_id', $item->id)->where('status', 'active')->where('load_status','inv_completed')->pluck('id');
+    //         $party_load_ind = Prime_load::where('party_id', $item->id)->where('status', 'active')->where('load_status','inv_completed')->pluck('id');
 
-            $inv_data_ind = E_invoice::whereIn('load_id', $party_load_ind)->select('id','bill_amt')->get();
+    //         $inv_data_ind = E_invoice::whereIn('load_id', $party_load_ind)->select('id','bill_amt')->get();
 
-            $inv_amount_ind = $inv_data_ind->sum('bill_amt');
+    //         $inv_amount_ind = $inv_data_ind->sum('bill_amt');
 
-            $party_sales_ind = Stock_out::where('cat','sales')->where('farm_id', $item->id)->sum('bill_amount');
+    //         $party_sales_ind = Stock_out::where('cat','sales')->where('farm_id', $item->id)->sum('bill_amount');
 
-            $in_cash_ind = $party_cash_ind->where('type','pay_in')->sum('amount');
-            $out_cash_ind = $party_cash_ind->where('type','pay_out')->sum('amount');
-            $pt_bal = $in_cash_ind - ($inv_amount_ind + $party_sales_ind +  $out_cash_ind);
+    //         $in_cash_ind = $party_cash_ind->where('type','pay_in')->sum('amount');
+    //         $out_cash_ind = $party_cash_ind->where('type','pay_out')->sum('amount');
+    //         $pt_bal = ($inv_amount_ind + $party_sales_ind +  $out_cash_ind) - $in_cash_ind;
 
-
-             if ($item->open_type === 'give') {
-                $give_bal = $item->open_bal;
-                $pt_bal = $pt_bal - $give_bal;
-            } elseif ($item->open_type === 'get') {
-                $get_bal = $item->open_bal;
-                $pt_bal = $pt_bal + $get_bal;
-            }
+    //     //    \Log::info('Party ID: ' . $inv_amount_ind);
+    //     //    \Log::info('Party Sales: ' . $party_sales_ind);
+    //     //    \Log::info('In Cash: ' . $in_cash_ind);
+    //     //    \Log::info('Out Cash: ' . $out_cash_ind);
+    //     //    \Log::info('Party Balance Before Opening: ' . $pt_bal);
 
 
-            $item->party_bal = $pt_bal;
+    //          if ($item->party_open_type === 'give') {
+    //             $give_bal = $item->party_open_bal;
+    //             $pt_bal = $pt_bal - $give_bal;
+    //         } elseif ($item->party_open_type === 'get') {
+    //             $get_bal = $item->party_open_bal;
+    //             $pt_bal = $pt_bal + $get_bal;
+    //         }
+
+    //     // \Log::info('Give Balance: ' . $give_bal);
+    //     // \Log::info('Get Balance: ' . $get_bal);
+    //     // \Log::info('Final Party Balance: ' . $pt_bal);
+
+
+    //         $item->party_bal = $pt_bal;
             
 
-            return $item;
+    //         return $item;
 
-        });
+    //     });
 
-        // dd($data->toArray());
+    //     $final =  $data->sum('party_bal');
+
+    //     $total_party = $data->count();
+
+    //       \Log::info('Final All Party Balance: ' . $final);
+
+    //     // dd($data->toArray());
 
         
-        $party_cash = Party_cash::select('id','type','amount','method','created_at')->get();
+    //     // $party_cash = Party_cash::select('id','type','amount','method','created_at')->get();
 
-        $total_party = Party::where('status','active')->count();
+      
+    //     // $party_load = Prime_load::where('status', 'active')->where('load_status','inv_completed')->pluck('id');
 
-        $party_load = Prime_load::where('status', 'active')->where('load_status','inv_completed')->pluck('id');
+    //     // $inv_data = E_invoice::select('id','bill_amt')->get();
 
-        $inv_data = E_invoice::select('id','bill_amt')->get();
+    //     // $inv_amount = $inv_data->sum('bill_amt');
 
-        $inv_amount = $inv_data->sum('bill_amt');
+    //     // $party_sales = Stock_out::where('cat','sales')->sum('bill_amount');
 
-        $party_sales = Stock_out::where('cat','sales')->sum('bill_amount');
+    //     // $in_cash = $party_cash->where('type','pay_in')->sum('amount');
+    //     // $out_cash = $party_cash->where('type','pay_out')->sum('amount');
 
-        $in_cash = $party_cash->where('type','pay_in')->sum('amount');
-        $out_cash = $party_cash->where('type','pay_out')->sum('amount');
+    //     // $party_give_get = Party::where('status','active')->get();
 
-        $party_give_get = Party::where('status','active')->get();
-
-        $give_total = $party_give_get->where('open_type', 'give')->sum('open_bal');
-        $get_total  = $party_give_get->where('open_type', 'get')->sum('open_bal');
+    //     // $give_total = $party_give_get->where('open_type', 'give')->sum('open_bal');
+    //     // $get_total  = $party_give_get->where('open_type', 'get')->sum('open_bal');
 
 
-        $bal =  $in_cash - ($inv_amount + $party_sales +  $out_cash)  + ($get_total - $give_total);
+    //     // $bal =  $in_cash - ($inv_amount + $party_sales +  $out_cash)  + ($get_total - $give_total);
 
        
 
 
 
-        $party_card = [
-            'balance'=> $bal,
-            'total'=>$total_party
-        ];
-        // dd($data);
+    //     $party_card = [
+    //         'balance'=> $final,
+    //         'total'=>$total_party
+    //     ];
+    //     // dd($data);
 
-        $party = $data->map(function ($party) {
+    //     $party = $data->map(function ($party) {
+    //             return [
+    //                 'party_id'      => $party->id ?? null,
+    //                 'party_en'      => $party->party_en ?? null,
+    //                 'party_nick_en' => $party->party_nick_en ?? null,
+    //                 'party_location'  => $party->party_location ?? null,
+    //                 'phone'         => $party->party_ph_no ?? null,
+    //                 'amount'       => $party->party_bal ?? null,
+    //                 'fav'          => $party->fav ?? null,
+    //             ];
+    //         });
+
+    //     return ['party'=>$party,'head_card'=>$party_card];
+
+    // }
+
+    public static function get_all_party(){
+                $data = Party::where('status', 'active')
+                ->orderBy('fav', 'DESC')
+                ->get()
+                ->map(function ($item) {
+
+                    $in_cash = Party_cash::where('party_id', $item->id)
+                        ->where('type', 'pay_in')
+                        ->sum('amount');
+
+                    $out_cash = Party_cash::where('party_id', $item->id)
+                        ->where('type', 'pay_out')
+                        ->sum('amount');
+
+                    $load_ids = Prime_load::where('party_id', $item->id)
+                        ->where('status', 'active')
+                        ->where('load_status', 'inv_completed')
+                        ->pluck('id');
+
+                    $inv_amount = E_invoice::whereIn('load_id', $load_ids)
+                        ->sum('bill_amt');
+
+                    $party_sales = Stock_out::where('cat', 'sales')
+                        ->where('farm_id', $item->id) // confirm column
+                        ->sum('bill_amount');
+
+                    $pt_bal = ($inv_amount + $party_sales + $out_cash) - $in_cash;
+
+                    if ($item->party_open_type === 'give') {
+                        $pt_bal -= $item->party_open_bal;
+                    } elseif ($item->party_open_type === 'get') {
+                        $pt_bal += $item->party_open_bal;
+                    }
+
+                    $item->party_bal = $pt_bal;
+
+                    return $item;
+                });
+
+            $final = $data->sum('party_bal');
+            $total_party = $data->count();
+
+            $party_card = [
+                'balance' => $final,
+                'total'   => $total_party
+            ];
+
+            $party = $data->map(function ($party) {
                 return [
-                    'party_id'      => $party->id ?? null,
-                    'party_en'      => $party->party_en ?? null,
-                    'party_nick_en' => $party->party_nick_en ?? null,
-                    'party_location'  => $party->party_location ?? null,
-                    'phone'         => $party->party_ph_no ?? null,
-                    'amount'       => $party->party_bal ?? null,
-                    'fav'          => $party->fav ?? null,
+                    'party_id'       => $party->id,
+                    'party_en'       => $party->party_en,
+                    'party_nick_en'  => $party->party_nick_en,
+                    'party_location' => $party->party_location,
+                    'phone'          => $party->party_ph_no,
+                    'amount'         => $party->party_bal,
+                    'fav'            => $party->fav,
                 ];
             });
 
-        return ['party'=>$party,'head_card'=>$party_card];
-
+            return [
+                'party'     => $party,
+                'head_card' => $party_card
+            ];
     }
 
     // function to get party profile details
@@ -199,15 +280,22 @@ class Party_ser
 
         $inv_data = E_invoice::whereIn('load_id', $party_load)
                 ->groupBy('load_id')
-                ->selectRaw('load_id, SUM(bill_amt) as total_amt,MAX(created_at) as created_at')
+                ->selectRaw("
+                    load_id,
+                    SUM(bill_amt) as total_amt,
+                    DATE_FORMAT(MAX(created_at), '%d-%m-%Y %H:%i:%s') as  invoice_date
+                ")
                 ->get()->map(function ($item) {
                     $item->source = 'invoice';
+                    $item->created_at = $item->invoice_date;
+                    $item->load_name = Prime_load::where('id', $item->load_id)->value('load_seq');
                     return $item;
                 });
 
 
         $inv_amount = $inv_data->sum('total_amt');
 
+       
        
 
         $party_stock = Stock_out::where('cat','sales')->where('farm_id', $party_id)->select('id', 'total_piece','bill_amount', 'created_at')->get()->map(function ($item) {
@@ -216,18 +304,37 @@ class Party_ser
                 });
 
         $party_sales = $party_stock->sum('bill_amount');
+        $party_trans = $party_cash->concat($inv_data)->concat($party_stock)
+        ->map(function ($item) {
+            
+         if ($item->created_at instanceof Carbon) {
+            $item->sort_ts = $item->created_at->timestamp;
+        } else {
+            // handle both formats
+            if (preg_match('/^\d{2}-\d{2}-\d{4}/', $item->created_at)) {
+                $dt = Carbon::createFromFormat('d-m-Y H:i:s', $item->created_at);
+            } else {
+                $dt = Carbon::parse($item->created_at);
+            }
 
-        $party_trans = $party_cash->concat($inv_data)->concat($party_stock)->sortByDesc('created_at')->values();
+            $item->created_at = $dt;          // keep Carbon
+            $item->sort_ts   = $dt->timestamp; // PURE numeric
+        }
+            return $item;
+
+        })
+        ->sortByDesc('sort_ts')->values();
 
         $in_cash = $party_cash->where('type','pay_in')->sum('amount');
         $out_cash = $party_cash->where('type','pay_out')->sum('amount');
 
-        $bal = $in_cash - ($inv_amount + $party_sales +$out_cash);
+        $bal = ($inv_amount + $party_sales +$out_cash) - $in_cash ;
 
         // \Log::info('inv amount: ' . $inv_amount);
         // \Log::info('party sales: ' . $party_sales);
         // \Log::info('in cash: ' . $in_cash);
         // \Log::info('out cash: ' . $out_cash);
+        // \Log::info('balance: ' . $bal);
 
         if ($data->party_open_type === 'give') {
             $give_bal = $data->party_open_bal;

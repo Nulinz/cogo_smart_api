@@ -146,7 +146,22 @@ class Stock_ser
 
     public static function get_stock_product(array $data)
     {
-        $product_id = $data['product_id'] ?? null;
+
+        if(isset($data['load_id'])){
+
+            $load_id = $data['load_id'];
+
+            $load = Prime_load::where('id', $load_id)->first();
+
+            if(!$load){
+                throw new \Exception('Load not found');
+            }
+
+            $product_id = $load->product_id;
+
+        }else{
+            $product_id = $data['product_id'] ?? null;
+        }
 
         if(!$product_id){
             throw new \Exception('Product ID is required');
@@ -496,16 +511,26 @@ class Stock_ser
 
    public static function update_loss_invoice(array $data)
    {
+
         $load_id = $data['load_id'];
 
         $m_inv = M_invoice::where('load_id', $load_id)->first();
+
+        // \Log::info('update_loss_invoice data: '. json_encode($data, JSON_PRETTY_PRINT));
 
         if(!$m_inv){
             throw new \Exception('Invoice not found');
         }
 
+        
+
+        $final =[ 
+            'type'   => $data['final_loss_type'] ?? null,
+            'amount' => $data['final_loss_amount'] ?? null,
+            'piece'  => $data['final_loss_piece'] ?? null,
+        ];  
         $m_inv->fill([
-            'final_loss'   => $data['final_loss'] ?? $m_inv->final_loss,
+            'final_loss'   => $final,
             'profit_loss'  => $data['profit_loss'] ?? $m_inv->profit_loss,
         ]);
 

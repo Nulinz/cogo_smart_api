@@ -361,15 +361,19 @@ class Stock_cnt extends Controller
 
     public function update_loss_invoice(Request $request)
     {
+         \Log::info('update_loss_invoice data: '. json_encode($request->all(), JSON_PRETTY_PRINT));
         $rules = [
             'load_id' => 'required|numeric',
-            'final_loss'=>'required|array',
+            'final_loss_type'=>'required|string',
+            'final_loss_amount'=>'required|string',
+            'final_loss_piece'=>'nullable|string',
             'profit_loss'=>'required|string',
         ];
 
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
+            \Log::info('Validation failed in update_loss_invoice: '.json_encode($validator->errors()));
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors(),

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Services\Load_ser;
 use App\Services\Exp_ser;
 use App\Models\Expense;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 class Exp_cnt extends Controller
@@ -241,6 +242,71 @@ class Exp_cnt extends Controller
         return response()->json([
             'success' => true,
             'data' => $emp_profile,
+        ], 200);
+    }
+
+    // function to get expense list
+
+    public function get_exp_list(Request $request)
+    {
+       try{
+             $users = User::where('status', 'active')
+                    ->select('id', 'name', 'role','location')
+                    ->get()
+                    ->map(function ($user) {
+                       
+                        $petty_cash = Expense::where('c_by', $user->id)
+                                        ->where('status', 'approved')
+                                        ->sum('amount');
+                        // $user_paid_list = Farmer_cash::where('c_by', $user->id)->sum('amount');
+                        $user->balance = $petty_cash;
+    
+                        return $user;
+                    });
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Database connection failed: '.$e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $users,
+        ], 200);
+    }
+
+    // function to get expense overall list
+
+    public function expense_overall_list(Request $request)
+    {
+         $rules = [
+           'emp_id' => 'required|string',
+       ];
+         $validator = Validator::make($request->all(), $rules);
+
+         if( $validator->fails() ) {
+             return response()->json([
+                 'success' => false,
+                 'errors' => $validator->errors(),
+             ], 422);
+         }
+
+       try{
+            $emp_profile = Exp_ser::expense_emp_profile($validator->validated());
+             $exp_list = $emp_profile['exp_transaction'];
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Database connection failed: '.$e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $exp_list,
         ], 200);
     }
 }

@@ -141,6 +141,7 @@ class Farmer_cnt extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+            \Log::error('Error fetching farmer profile: '.$e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch farmer profile: '.$e->getMessage(),

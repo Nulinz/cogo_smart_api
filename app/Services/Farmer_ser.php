@@ -178,7 +178,7 @@ class Farmer_ser
            return $item;
         });
 
-        $transactions = Farmer_cash::where('farm_id', $farm_id)->get()->map(function($item){
+        $transactions = Farmer_cash::with(['load_data:id,load_seq'])->where('farm_id', $farm_id)->orderBy('created_at', 'desc')->get()->map(function($item){
            $item->table = 'farmer_cash';
            return $item;
         });
@@ -256,6 +256,7 @@ class Farmer_ser
 
         $farm_cash = Farmer_cash::create([
             'farm_id' => $data['farm_id'],
+            'load_id' => $data['load_id'] ?? null,
             'type'    => $data['type'],
             'amount'  => $data['amount'],
             'method'  => $data['pay_method'] ?? 'Cash',

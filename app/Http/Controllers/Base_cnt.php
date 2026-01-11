@@ -287,5 +287,127 @@ class Base_cnt extends Controller
             ], 500);
         }
     }
+
+     // function to add bank details
+
+    public function add_bank_details(Request $request)
+    {
+        $rule = [
+            'type' => 'required|string|in:farmer,party,emp',
+            'f_id' => 'required|string',
+            'acc_type' => 'required|string',
+            'b_name' => 'required|string',
+            'acc_name' => 'required|string',
+            'acc_no' => 'required|string',
+            'ifsc' => 'nullable|string',
+            'upi' => 'nullable|string',
+            'method' => 'required|string|in:create,update',
+
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if( $validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try{
+        if( $request->method == 'update' ) {
+            $bank = Bank::where('type', $request->type)
+                         ->where('f_id', $request->f_id)
+                         ->first();
+
+            if( !$bank ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bank details not found for update',
+                ], 404);
+            }
+
+            $bank->acc_type = $request->acc_type;
+            $bank->b_name = $request->b_name;
+            $bank->acc_name = $request->acc_name;
+            $bank->acc_no = $request->acc_no;
+            $bank->ifsc = $request->ifsc;
+            $bank->upi = $request->upi;
+            $bank->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bank details updated successfully',
+                'data' => $bank,
+            ], 200);
+        }else{
+
+        
+            $bank = Bank::create([
+                'type' => $request->type,
+                'f_id' => $request->f_id,
+                'acc_type' => $request->acc_type,
+                'b_name' => $request->b_name,
+                'acc_name' => $request->acc_name,
+                'acc_no' => $request->acc_no,
+                'ifsc' => $request->ifsc,
+                'upi' => $request->upi,
+                'status' => 'active',
+                'c_by' => Auth::guard('tenant')->user()->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bank details added successfully',
+                'data' => $bank,
+            ], 200);
+        }
+
+
+        }catch(\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bank details addition failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // get bank details
+
+    public function get_bank_details(Request $request)
+    {
+        $rule = [
+            'type' => 'required|string|in:farmer,party,emp',
+            'f_id' => 'required|string',
+
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if( $validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try{
+
+        $bank = Bank::where('type', $request->type)
+                     ->where('f_id', $request->f_id)
+                     ->first();
+
+            return response()->json([
+                'success' => true,
+                'data' => $bank,
+            ], 200);
+
+        }catch(\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch bank details: '.$e->getMessage(),
+            ], 500);
+        }
+    }
     
 }

@@ -15,12 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('load_seq',50)->nullable();
             $table->string('market',200)->nullable();
-            $table->unsignedInteger('party_id')->nullable();
+            $table->unsignedBigInteger('product_id')->nullable();
+            $table->unsignedBigInteger('party_id')->nullable();
             $table->string('empty_weight',10)->nullable();
             $table->date('load_date')->nullable();
             $table->string('veh_no',20)->nullable();
             $table->string('dr_no',20)->nullable();
-            $table->unsignedInteger('transporter')->nullable();
+            $table->unsignedBigInteger('transporter')->nullable();
             $table->decimal('quality_price',10,2)->nullable();
             $table->decimal('filter_price',10,2)->nullable();
             $table->unsignedInteger('req_qty')->nullable();
@@ -28,6 +29,7 @@ return new class extends Migration
             $table->json('team')->nullable();
             $table->unsignedBigInteger('c_by')->nullable(); 
             $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->enum('load_status', ['sum_draft', 'sum_completed','inv_draft','inv_completed'])->default('sum_draft');
             $table->timestamps();
         });
     }

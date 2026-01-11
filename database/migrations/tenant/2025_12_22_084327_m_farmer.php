@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('wp_no',15)->nullable();
             $table->enum('open_type', ['give', 'get'])->nullable();
             $table->unsignedBigInteger('open_bal')->nullable();
+            $table->unsignedBigInteger('adv_prime')->nullable();
             $table->string('acc_type',30)->nullable();
             $table->string('b_name',100)->nullable();
             $table->string('acc_name',100)->nullable();

@@ -99,7 +99,7 @@ class Load_ser
         if($data['adv'] > 0){
             // update farmer advance
 
-            $farmer = Farmer_ser::farmer_pay_in(['farm_id' => $data['farmer_id'],'amount' => $data['adv'], 'type' => 'advance_deduct']);
+            $farmer = Farmer_ser::farmer_pay_in(['farm_id' => $data['farmer_id'],'amount' => $data['adv'], 'type' => 'advance_deduct','load_id' => $data['load_id']]);
 
         }
 
@@ -191,7 +191,10 @@ class Load_ser
         $load_data = Prime_load::with(['party_data:id,party_en,party_location'])->where('id', $load_id)->first();
 
         $load_data->load_summary =  Summary::where('load_id', $load_id)->count();
-        $load_data->load_invoice = M_invoice::where('load_id', $load_id)->count();
+
+        $final_loss = M_invoice::where('load_id', $load_id)->value('final_loss');
+
+        $load_data->load_invoice = is_null($final_loss) ? 0 : 1;
 
 
         $summary = [

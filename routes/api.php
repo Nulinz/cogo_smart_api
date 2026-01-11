@@ -94,6 +94,11 @@ Route::middleware(['tenant.db','jwt.auth'])->group(function () {
     Route::post('/edit_employee', [Register_cnt::class, 'edit_employee']);
      Route::post('/edit_employee_details', [Register_cnt::class, 'edit_employee_details']);
 
+     //bank details
+    Route::post('/add_bank_details', [Base_cnt::class, 'add_bank_details']);
+    Route::post('/get_bank_details', [Base_cnt::class, 'get_bank_details']);
+    // Route::post('/edit_bank_details', [Base_cnt::class, 'edit_bank_details']);
+
 
     // advance related routes
     // Route::post('/add_advance', [Base_cnt::class, 'add_advance']);
@@ -158,5 +163,10 @@ Route::middleware(['tenant.db','jwt.auth'])->group(function () {
     Route::post('/expense_home', [Exp_cnt::class, 'expense_home']);
     Route::post('/expense_week', [Exp_cnt::class, 'expense_week']);
     Route::post('/expense_emp_profile', [Exp_cnt::class, 'expense_emp_profile']);
+    Route::post('/expense_overall_list', [Exp_cnt::class, 'expense_overall_list']);
+
+    // expense list
+
+     Route::post('/get_exp_list', [Exp_cnt::class, 'get_exp_list']);
 
 });

@@ -686,4 +686,6 @@ class Register_cnt extends Controller
             ], 500);
         }
     }
+
+   
 }

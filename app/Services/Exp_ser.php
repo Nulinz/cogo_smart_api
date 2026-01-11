@@ -143,16 +143,28 @@ class Exp_ser
 
         $user_profile = User::where('id', $emp_id)->select('id','name')->first();
 
-        $exp_approve = Expense::with(['exp_category:id,cat'])->where('status','approved')->where('c_by', $emp_id)->sum('amount');
+        $exp_approve = Expense::with(['exp_category:id,cat'])->where('c_by', $emp_id)->get()->map(function ($item) {
+            $item->table = 'expense';
+            return $item;
+        });
 
-        $exp_transaction = E_expense::where('emp_id', $emp_id)->orderBy('created_at', 'desc')->get();
+        $exp_transaction = E_expense::where('emp_id', $emp_id)->orderBy('created_at', 'desc')->get()->map(function ($item) {
+            $item->table = 'e_expense';
+            return $item;
+        });
+
+        $exp_balance = ($exp_approve->sum('amount') - $exp_transaction->sum('amount'));
+
+        $exp_pending = $exp_approve->where('status','pending')->sum('amount');
+
+        $exp_data = $exp_approve->concat($exp_transaction)->sortByDesc('created_at')->values();
 
         $exp_out = $exp_transaction->sum('amount');
 
         return ['user_profile' => $user_profile,
-                'exp_approve' => $exp_approve,
-                'exp_out' => (string) $exp_out,
-                'exp_transaction' => $exp_transaction
+                'exp_balance' => $exp_balance,
+                'exp_pending' => $exp_pending,
+                'exp_transaction' => $exp_data
             ];
 
     }
