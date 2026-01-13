@@ -130,7 +130,13 @@ class Load_ser
             return $item;
         });
 
-        return $query;
+       $ongoing = $query->where('load_status','!=','inv_completed');
+
+       $completed = $query->where('load_status','inv_completed');
+
+        //  \Log::info('Final Load List: ', $query->toArray());
+
+        return ['ongoing'=>$ongoing->values(),'completed'=>$completed->values()];
     }
 
     // function to get individual load list

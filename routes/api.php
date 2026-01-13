@@ -72,6 +72,7 @@ Route::middleware(['tenant.db','jwt.auth'])->group(function () {
 
     // method to create sequence
     Route::post('/create_sequence', [Register_cnt::class, 'create_seq']);
+    Route::post('/get_sequence', [Register_cnt::class, 'get_sequence_count']);
 
     // method to create load
     Route::post('/create_load', [Load_cnt::class, 'create_load']);
@@ -99,11 +100,12 @@ Route::middleware(['tenant.db','jwt.auth'])->group(function () {
     Route::post('/get_employee_details', [Register_cnt::class, 'get_employee_details']);
     Route::post('/edit_employee', [Register_cnt::class, 'edit_employee']);
      Route::post('/edit_employee_details', [Register_cnt::class, 'edit_employee_details']);
+     Route::post('/change_password', [Register_cnt::class, 'change_password']);
 
      //bank details
     Route::post('/add_bank_details', [Base_cnt::class, 'add_bank_details']);
     Route::post('/get_bank_details', [Base_cnt::class, 'get_bank_details']);
-    // Route::post('/edit_bank_details', [Base_cnt::class, 'edit_bank_details']);
+    Route::post('/list_bank_details', [Base_cnt::class, 'list_bank_details']);
 
 
     // advance related routes
@@ -159,6 +161,7 @@ Route::middleware(['tenant.db','jwt.auth'])->group(function () {
 
     Route::post('/add_petty',[Stock_cnt::class, 'add_petty']);
     Route::post('/petty_cash_ind',[Stock_cnt::class, 'petty_cash_ind']);
+    Route::post('/petty_cash_ind_transaction',[Stock_cnt::class, 'petty_cash_ind_transaction']);
     Route::post('/petty_cash_ind_view_all',[Stock_cnt::class, 'petty_cash_ind_view_all']);
 
     // Route to expenses

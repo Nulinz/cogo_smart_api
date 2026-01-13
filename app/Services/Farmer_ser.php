@@ -6,6 +6,7 @@ use App\Models\Farmer;
 use App\Models\Load;
 use App\Models\Stock_in;
 use App\Models\Farmer_cash; 
+use App\Models\Bank;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -21,20 +22,10 @@ class Farmer_ser
                 // Fill the model with new data
             $farmer->fill([
                 'farm_en' => $data['farm_en'],
-                'farm_kn' => $data['farm_kn'] ?? null,
-                'farm_nick_en' => $data['farm_nick_en'],
-                'farm_nick_kn' => $data['farm_nick_kn'] ?? null,
+                'farm_nick_en' => $data['farm_nick_en'], 
                 'location' => $data['location'],
                 'ph_no' => $data['ph_no'],
                 'wp_no' => $data['wp_no'],
-                'open_type' => $data['open_type'],
-                'open_bal' => $data['open_bal'],
-                'acc_type' => $data['acc_type'],
-                'b_name' => $data['b_name'],
-                'acc_name' => $data['acc_name'],
-                'acc_no' => $data['acc_no'],
-                'ifsc' => $data['ifsc'],
-                'upi' => $data['upi'],
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
             ]);
 
@@ -55,14 +46,23 @@ class Farmer_ser
                 'wp_no' => $data['wp_no'],
                 'open_type' => $data['open_type'],
                 'open_bal' => $data['open_bal'],
-                'acc_type' => $data['acc_type'],
-                'b_name' => $data['b_name'],
-                'acc_name' => $data['acc_name'],
-                'acc_no' => $data['acc_no'],
-                'ifsc' => $data['ifsc'],
-                'upi' => $data['upi'],
+                'adv_prime' => $data['adv'] ?? 0,
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
             ]);
+
+            if(!empty($data['b_name']) ){
+                $farmer_bank = Bank::create([
+                    'type' => 'farmer',
+                    'f_id' => $farmer->id,
+                    'acc_type' => $data['acc_type'],
+                    'b_name' => $data['b_name'],
+                    'acc_name' => $data['acc_name'],
+                    'acc_no' => $data['acc_no'],
+                    'ifsc' => $data['ifsc'],
+                    'upi' => $data['upi'],
+                    'c_by' => Auth::guard('tenant')->user()->id ?? null,
+                ]);
+            }
 
             if($data['adv'] > 0){
                 // Create initial Farmer_cash record for opening balance

@@ -125,7 +125,8 @@ class Load_cnt extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $loads,
+                'data' => $loads['ongoing'],
+                'completed' => $loads['completed'],
             ], 200);
 
         } catch (\Exception $e) {

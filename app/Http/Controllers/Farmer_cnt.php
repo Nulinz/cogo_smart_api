@@ -17,9 +17,7 @@ class Farmer_cnt extends Controller
         $rule = [
             'farm_id' => 'nullable|string',
             'farm_en' => 'required|string',
-            // 'farm_kn' => 'nulllable|string',
             'farm_nick_en' => 'required|string',
-            // 'farm_nick_kn' => 'nulllable|string',
             'location' => 'required|string',
             'ph_no' => 'required|string',
             'wp_no' => 'required|string',
@@ -36,10 +34,12 @@ class Farmer_cnt extends Controller
         ];
 
         $validator = Validator::make($request->all(), $rule);
+        
+        //  \Log::info('Create farm request data: ', $request->all());
 
         if ($validator->fails()) {
 
-            \Log::error('Validation failed in create_farm: ', $validator->errors()->toArray());
+            // \Log::error('Validation failed in create_farm: ', $validator->errors()->toArray());
 
             return response()->json([
                 'success' => false,

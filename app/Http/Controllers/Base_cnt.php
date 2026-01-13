@@ -6,6 +6,8 @@ use App\Services\Base_ser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Models\Bank;
+use Illuminate\Support\Facades\Auth;
 
 class Base_cnt extends Controller
 {
@@ -396,6 +398,42 @@ class Base_cnt extends Controller
         $bank = Bank::where('type', $request->type)
                      ->where('f_id', $request->f_id)
                      ->first();
+
+            return response()->json([
+                'success' => true,
+                'data' => $bank,
+            ], 200);
+
+        }catch(\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch bank details: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to list bank details
+
+    public function list_bank_details(Request $request)
+    {
+        $rule = [
+            'type' => 'required|string|in:farmer,party,emp',
+            'emp_id' => 'nullable|string',
+
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if( $validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try{
+
+        $bank = Bank::where('type', $request->type)->where('f_id', $request->emp_id)->get();
 
             return response()->json([
                 'success' => true,

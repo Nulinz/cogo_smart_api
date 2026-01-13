@@ -15,9 +15,7 @@ class Party_cnt extends Controller
         $rule = [
             'party_id' => 'nullable|string',
             'party_en' => 'required|string',
-            'party_kn' => 'nullable|string',
             'party_nick_en' => 'required|string',
-            'party_nick_kn' => 'nullable|string',
             'com_name' => 'required|string',
             'com_add' => 'required|string',
             'party_location' => 'required|string',

@@ -6,9 +6,11 @@ use App\Models\Party;
 use App\Models\Prime_load;
 use App\Models\E_invoice;
 use App\Models\Stock_out;
+use App\Models\Shift;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Party_cash;
+use App\Models\Bank;
 use Carbon\Carbon;
 
 class Party_ser
@@ -28,14 +30,6 @@ class Party_ser
                 'party_location' => $data['party_location'],
                 'party_ph_no' => $data['party_ph_no'],
                 'party_wp_no' => $data['party_wp_no'],
-                'party_open_type' => $data['party_open_type'],
-                'party_open_bal' => $data['party_open_bal'],
-                'party_acc_type' => $data['party_acc_type'],
-                'party_b_name' => $data['party_b_name'],
-                'party_acc_name' => $data['party_acc_name'],
-                'party_acc_no' => $data['party_acc_no'],
-                'party_ifsc' => $data['party_ifsc'],
-                'party_upi' => $data['party_upi'],
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
             ]);
 
@@ -59,14 +53,23 @@ class Party_ser
                 'party_wp_no' => $data['party_wp_no'],
                 'party_open_type' => $data['party_open_type'],
                 'party_open_bal' => $data['party_open_bal'],
-                'party_acc_type' => $data['party_acc_type'],
-                'party_b_name' => $data['party_b_name'],
-                'party_acc_name' => $data['party_acc_name'],
-                'party_acc_no' => $data['party_acc_no'],
-                'party_ifsc' => $data['party_ifsc'],
-                'party_upi' => $data['party_upi'],
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
             ]);
+
+            if(!empty($data['party_b_name']) ){
+                $party_bank = Bank::create([
+                    'type' => 'party',
+                    'f_id' => $party->id,
+                    'acc_type' => $data['party_acc_type'] ?? null,
+                    'b_name' => $data['party_b_name'] ?? null,
+                    'acc_name' => $data['party_acc_name'] ?? null,
+                    'acc_no' => $data['party_acc_no'] ?? null,
+                    'ifsc' => $data['party_ifsc'] ?? null,
+                    'upi' => $data['party_upi'] ?? null,
+                    'c_by' => Auth::guard('tenant')->user()->id ?? null,
+                ]);
+            }
+
            }
 
            return $party;
@@ -207,11 +210,16 @@ class Party_ser
                     $inv_amount = E_invoice::whereIn('load_id', $load_ids)
                         ->sum('bill_amt');
 
+                    $shift_others = Shift::where('cat', 'others')
+                        ->where('party_id', $item->id)
+                        ->where('status', 'active')
+                        ->sum('bill_amount');
+
                     $party_sales = Stock_out::where('cat', 'sales')
                         ->where('farm_id', $item->id) // confirm column
                         ->sum('bill_amount');
 
-                    $pt_bal = ($inv_amount + $party_sales + $out_cash) - $in_cash;
+                    $pt_bal = ($inv_amount + $party_sales + $out_cash + $shift_others) - $in_cash;
 
                     if ($item->party_open_type === 'give') {
                         $pt_bal -= $item->party_open_bal;
@@ -295,16 +303,22 @@ class Party_ser
 
         $inv_amount = $inv_data->sum('total_amt');
 
-       
-       
 
+        $party_others = Shift::where('cat','others')->where('party_id', $party_id)->where('status', 'active')->get()->map(function ($item) {
+                            $item->source = 'others';
+                            return $item;
+                        });
+
+        $party_other_amount = $party_others->sum('bill_amount');
+
+       
         $party_stock = Stock_out::where('cat','sales')->where('farm_id', $party_id)->select('id', 'total_piece','bill_amount', 'created_at')->get()->map(function ($item) {
                     $item->source = 'sales';
                     return $item;
                 });
 
         $party_sales = $party_stock->sum('bill_amount');
-        $party_trans = $party_cash->concat($inv_data)->concat($party_stock)
+        $party_trans = $party_cash->concat($inv_data)->concat($party_others)->concat($party_stock)
         ->map(function ($item) {
             
          if ($item->created_at instanceof Carbon) {
@@ -328,8 +342,8 @@ class Party_ser
         $in_cash = $party_cash->where('type','pay_in')->sum('amount');
         $out_cash = $party_cash->where('type','pay_out')->sum('amount');
 
-        $bal = ($inv_amount + $party_sales +$out_cash) - $in_cash ;
-
+        $bal = ($inv_amount + $party_sales + $out_cash + $party_other_amount) - $in_cash ;
+    
         // \Log::info('inv amount: ' . $inv_amount);
         // \Log::info('party sales: ' . $party_sales);
         // \Log::info('in cash: ' . $in_cash);

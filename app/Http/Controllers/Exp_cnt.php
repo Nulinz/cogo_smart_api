@@ -255,11 +255,12 @@ class Exp_cnt extends Controller
                     ->get()
                     ->map(function ($user) {
                        
-                        $petty_cash = Expense::where('c_by', $user->id)
-                                        ->where('status', 'approved')
-                                        ->sum('amount');
+                        $petty_cash = Exp_ser::expense_emp_profile(['emp_id' => $user->id]);
+                        // $petty_cash = Expense::where('c_by', $user->id)
+                        //                 ->where('status', 'approved')
+                        //                 ->sum('amount');
                         // $user_paid_list = Farmer_cash::where('c_by', $user->id)->sum('amount');
-                        $user->balance = $petty_cash;
+                        $user->balance = $petty_cash['exp_balance'];
     
                         return $user;
                     });

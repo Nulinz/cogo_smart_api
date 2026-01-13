@@ -10,6 +10,10 @@ use App\Services\Tenant_db;
 use App\Services\Base_ser;
 use App\Models\Petty_cash;
 use App\Models\Farmer_cash;
+use App\Services\Stock_ser;
+use App\Models\Sequence;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -148,6 +152,34 @@ class Register_cnt extends Controller
                     'phone' => $request->phone,
 
                 ]);
+
+                $product = ['Grade A','katki','Bombay katki'];
+
+                foreach($product as $prod){
+
+                    DB::connection('tenant')->table('m_product')->insert([
+                        'name_en' => $prod,
+                        // 'name_kn' => null,
+                        'type' => 'auto',
+                        'status' => 'active',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                DB::connection('tenant')->table('m_sequence')->insert([
+                    'load_pref' => 'LOAD',
+                    'load_suf' => 001,
+                    'farmer_pref' => 'FARM',
+                    'farmer_suf' => 001,
+                    'party_pref' => 'PARTY',
+                    'party_suf' => 001,
+                    'status' => 'active',
+                    'c_by' => 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+               
 
 
                 $token = JWTAuth::claims([
@@ -484,7 +516,7 @@ class Register_cnt extends Controller
                     'phone' => $request->phone,
                     'db_name' => $db,
                     'otp' => 0,
-                    'otp_verified' => 'no',
+                    'otp_verified' => 'yes',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -528,11 +560,11 @@ class Register_cnt extends Controller
                     ->select('id', 'name', 'role','location')
                     ->get()
                     ->map(function ($user) {
-                       
-                        $petty_cash = Petty_cash::where('emp_id', $user['id'])->sum('amount');
-                        $user_paid_list = Farmer_cash::where('c_by', $user['id'])->sum('amount');
 
-                        $user->balance = $user_paid_list - $petty_cash;
+                        $data =  Stock_ser::petty_cash_ind(['emp_id'=>$user->id]);
+
+                        $user->balance = $data['balance'];
+
     
                         return $user;
                     });
@@ -715,5 +747,63 @@ class Register_cnt extends Controller
         }
     }
 
+    // function to change password
+
+    public function change_password(Request $request)
+    {
+        if($request->has('type')){
+            $user = User::where('id', $request->user_id)->select('id','name','phone','password')->first();
+            return response()->json([
+                'success' => true,
+                'data' => $user,
+            ], 200);    
+        }
+
+        $rule = [
+            'new_password' => 'required|string',
+
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $user = Auth::guard('tenant')->user(); // ✅ Works now
+
+            // if($user->password != $request->old_password){
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Old password does not match',
+            //     ], 400);
+            // }
+
+            $user = User::where('id', $user->id)->update([
+                'password' => $request->new_password,
+            ]);
+            // $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password changed successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password change failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
    
+    // function for get sequence count
+
+    public function get_sequence_count(Request $request)
+    {
+        return response()->json(['count' => Sequence::count()]);
+    }
 }

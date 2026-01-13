@@ -15,6 +15,8 @@ use App\Services\Party_ser;
 use App\Models\Prime_load;
 use App\Models\Filter;
 use App\Models\Expense_cat;
+use App\Models\Expense;
+use App\Services\Stock_ser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -308,7 +310,7 @@ class Base_ser
 
 
         $prime_load = Prime_load::with(['party_data:id,party_en,party_location','load_list:id,load_id,bill_piece,grace_piece,total_piece,farmer_id',
-                                          'shift_list:id,load_id,bill_piece,grace_piece,total_piece',])->where('status', 'active');
+                                          'shift_list:id,load_id,bill_piece,grace_piece,total_piece',])->where('status', 'active')->where('load_status','!=','inv_completed')->limit(20);
 
         if(Auth::guard('tenant')->user()->role != 'admin'){
 
@@ -324,31 +326,117 @@ class Base_ser
            $shift_piece = (optional($item->shift_list)->sum('total_piece')) ?? 0;
 
             $item->loaded = $add_piece - $shift_piece;
-            $item->remain  =$item->bill_piece - $item->loaded;
+            $item->remain  = $item->req_qty - $item->loaded;
+
+           
+
+            $item->last_farmer = collect($item->load_list)
+                                ->sortByDesc('id')
+                                ->take(2)
+                                ->values()
+                                ->map(function ($load) {
+                                    return [
+                                        // 'id' => $load->id,
+                                        'farmer_det' => $load->farmer_data->farm_en ?? null,
+                                        'tp' => $load->total_piece ?? 0,
+                                    ];
+                                });
+
+
+             return [
+                'load_id' => $item->id,
+                'load_seq' => $item->load_seq,
+                'party_name' => $item->party_data->party_en ?? null,
+                'party_location' => $item->party_data->party_location ?? null,
+                'load_date' => date('d-m-Y', strtotime($item->load_date)),
+                'req_qty' => $item->req_qty,
+                'total_loaded' => $item->loaded,
+                'filtered_total' => $item->filter,
+                'pending_qty' =>$item->remain,
+                'last_farmer' =>$item->last_farmer
+            ];
 
             
 
-            $item->last_farmer = $item->load_list
-                                ?->sortByDesc('id')
-                                ->take(2)
-                                ->map(function ($load) {
-                                    return $load->farmer_data->farm_en ?? null;
-                                });
+            // $item->last_farmer = $item->load_list?->sortByDesc('id')->take(2)
+            //                     ->map(function ($load) {
+
+            //                         $load->tp = $load->total_piece; 
+            //                         $load->farmer_det = $load->farmer_data->farm_en ?? null;
+
+
+            //                          return $load;
+            //                     });
 
             unset($item->load_list, $item->shift_list);
 
             return $item;
         });
 
-        if(Auth::guard('tenant')->user()->role != 'admin'){
+
+        // $prime_load = $prime_load->map(function($item){
+            
+        //         $load_data = $item->load_list;
+
+        //         $load_data = $load_data->map(function($load_item) use ($item){
+
+        //             $farmer = $load_item->farmer_data;
+
+        //             $load_item->farm_en = $farmer->farm_en ?? null;
+        //             $load_item->location = $farmer->location ?? null;
+
+        //             $load_item->total_loaded = Filter::where('load_id', $item->id)
+        //                                             ->where('farmer_id', $load_item->farmer_id)
+        //                                             ->sum('total');
+
+        //             $add_piece   = (optional($item->load_list)->sum('total_piece')) ?? 0;
+        //             $shift_piece = (optional($item->shift_list)->sum('total_piece')) ?? 0;
+
+        //             $item->loaded = $add_piece - $shift_piece;
+        //             $item->remain  = $item->req_qty - $item->loaded;
+
+        //             $last_farmer = $item->load_list?->sortByDesc('id')->take(2)
+        //                         ->map(function ($load) {
+
+        //                             $load->tp = $load->total_piece; 
+        //                             $load->farmer_data->farm_en ?? null;
+        //                              return $load;
+        //                         });
+
+        //             $load_list =[
+        //                 'load_id' => $item->id,
+        //                 'load_seq' => $item->load_seq,
+        //                 'farmer_id' => $load_item->farmer_id,
+        //                 'farmer_name' => $farmer->farm_en ?? null,
+        //                 'location' => $farmer->location ?? null,
+        //                 'req_qty' => $item->req_qty,
+        //                 'total_loaded' => $add_piece - $shift_piece,
+        //                 'filtered_total' => $load_item->total_loaded,
+        //                 'pending_qty' =>$item->req_qty - $item->loaded,
+        //                 'farmer_last' =>$last_farmer
+
+
+        //             ];
+
+        //             return $load_list;
+        //         });
+                    
+        // });
+
+        //   \Log::info("Fetching expense today for dashboard", ['user_id' => Auth::guard('tenant')->user()->id]);
+
+        if(Auth::guard('tenant')->user()->role == 'admin'){
 
             $petty_cash = 0;
         }else{
-            $petty_cash_sum = Petty_cash::where('emp_id', Auth::guard('tenant')->user()->id)->sum('amount');
+            // $petty_cash_sum = Petty_cash::where('emp_id', Auth::guard('tenant')->user()->id)->sum('amount');
 
-            $farmer_cash = Farmer_cash::where('c_by', Auth::guard('tenant')->user()->id)->sum('amount');
+          
+            $expense_today = Expense::with(['exp_category:id,cat'])->where('c_by', Auth::guard('tenant')->user()->id)->whereDate('created_at', date('Y-m-d'))->orderBy('id', 'desc')->get();
 
-            $petty_cash = $petty_cash_sum - $farmer_cash;
+           $bal =  Stock_ser::petty_cash_ind(['emp_id'=>Auth::guard('tenant')->user()->id]);
+
+            $petty_cash = $bal['balance'];
         }
 
 
@@ -357,6 +445,7 @@ class Base_ser
             'party_card' => $party_card,
             'load_data' => $prime_load,
             'petty_cash' => $petty_cash ?? 0,
+            'expense_today' => $expense_today ?? null
         ];
 
       
@@ -368,12 +457,14 @@ class Base_ser
     {
         $user = User::where('id', $data['user_id'])->first();
 
-        $user_paid_list = Farmer_cash::with(['farm_data:id,farm_en,location'])->where('c_by', $data['user_id'])->orderBy('id','desc')->limit(100)->get();
+        // $user_paid_list = Farmer_cash::with(['farm_data:id,farm_en,location'])->where('c_by', $data['user_id'])->orderBy('id','desc')->limit(100)->get();
 
-        $petty_cash = Petty_cash::where('emp_id', $data['user_id'])->sum('amount');
+        // $petty_cash = Petty_cash::where('emp_id', $data['user_id'])->sum('amount');
 
 
-        $user_spent = $user_paid_list->sum('amount');
+        // $user_spent = $user_paid_list->sum('amount');
+
+          $data =  Stock_ser::petty_cash_ind(['emp_id'=>$user->id,'limit'=> 20]);
         
 
 
@@ -381,6 +472,6 @@ class Base_ser
             throw new \Exception("User not found");
         }
 
-        return ['user' => $user, 'user_paid' => $user_paid_list,'cash_given' => $petty_cash, 'cash_spent' => $user_spent];
+        return ['user' => $user, 'user_balance' => $data['balance'],'cash_given' => $data['cash_given'], 'cash_spent' => $data['cash_used'],'list' => $data['list']];
     }
 }

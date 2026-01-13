@@ -15,6 +15,7 @@ use App\Models\Petty_cash;
 use App\Models\Farmer_cash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class Stock_ser
 {
@@ -69,7 +70,7 @@ class Stock_ser
 
                 // take only latest 5 transactions
                 $latest_transactions = collect($transactions['stock_data'])
-                    ->sortByDesc('created_at')
+                    // ->sortByDesc('created_at')
                     ->take(5)
                     ->values();
 
@@ -81,17 +82,20 @@ class Stock_ser
 
     public static function stock_transaction_list(array $data)
     {
-        $stock_in_query = Stock_in::with('product_data:id,name_en','farm_data:id,farm_en','load_data:id,load_seq')->get()->map(function($item){
+        $stock_in_query = Stock_in::with('product_data:id,name_en','farm_data:id,farm_en','load_data:id,load_seq')->orderBy('created_at','desc')->get()->map(function($item){
                 $item->table = 'in';
                 return $item;
         });
 
-        $stock_out_query = Stock_out::with('product:id,name_en','party:id,party_en','load_data:id,load_seq')->get()->map(function($item){
+        $stock_out_query = Stock_out::with('product:id,name_en','party:id,party_en','load_data:id,load_seq')->orderBy('created_at','desc')->get()->map(function($item){
                 $item->table = 'out';
                 return $item;
         });
 
-        $merge = $stock_in_query->merge($stock_out_query)->sortBy('created_at')->values();
+        $merge = $stock_in_query->concat($stock_out_query)->sortByDesc(function ($item) {
+                     return Carbon::createFromFormat('d-m-Y H:i:s', $item->created_at);
+                    })
+                ->values();
 
 
         $stock_data = $merge->map(function($item){
@@ -493,18 +497,54 @@ class Stock_ser
             throw new \Exception('Employee ID is required');
         }
 
-        $petty_list = Petty_cash::where('emp_id', $emp_id)->get();
+        $petty_list = Petty_cash::where('emp_id', $emp_id)->get()->map(function($item){
+                $item->table = 'petty';
+                return $item;
+        });
 
-        return $petty_list;
+        $petty_cash_given = $petty_list->where('type','petty')->sum('amount');
+        $petty_cash_settle  = $petty_list->where('type','settle')->sum('amount');
+
+        $farmer_paid_list = Farmer_cash::with(['farm_data:id,farm_en,location'])->where('c_by', $emp_id);
+        
+        if(isset($data['limit']) && is_int($data['limit'])){
+            $farmer_paid_list = $farmer_paid_list->limit($data['limit']);
+        }
+        $farmer_paid_list = $farmer_paid_list->orderBy('id','desc')
+        ->get()->map(function($item){
+                $item->table = 'farmer_cash';
+                return $item;
+        });
+
+        // $overall_list = $petty_list->concat($farmer_paid_list)->sortByDesc(function ($item) {
+        //         return Carbon::createFromFormat('d-m-Y H:i:s', $item->created_at);
+        //     })->values();
+
+        // \Log::info('petty cash given: '. $petty_cash_given);
+        // \Log::info('petty cash settle: '. $petty_cash_settle);
+        // \Log::info('farmer paid sum: '. $farmer_paid_list->sum('amount'));
+        
+
+
+        $balance = ($petty_cash_given - $petty_cash_settle) - $farmer_paid_list->sum('amount');
+
+
+        return ['cash_given'=>$petty_cash_given,'cash_used'=>$farmer_paid_list->sum('amount'),'balance' => $balance, 'list' => $farmer_paid_list];
    }
 
    // function to get petty cash individual view all
 
-   public static function petty_cash_ind_view_all(array $data)
+   public static function petty_cash_ind_transaction(array $data)
    {
-        $user_paid_list = Farmer_cash::where('c_by', $data['emp_id'])->orderBy('id','desc')->get();
+         $emp_id = $data['emp_id'] ?? null;
+        // $user_paid_list = Farmer_cash::where('c_by', $data['emp_id'])->orderBy('id','desc')->get();
 
-        return $user_paid_list;
+         $petty_list = Petty_cash::where('emp_id', $emp_id)->orderBy('created_at','desc')->get()->map(function($item){
+                $item->table = 'petty';
+                return $item;
+        });
+
+        return $petty_list;
    }
 
    // function to update invoice

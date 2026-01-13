@@ -14,9 +14,7 @@ class Party extends Model
     protected $fillable = [
         'party_seq',
         'party_en',
-        'party_kn',
         'party_nick_en',
-        'party_nick_kn',
         'com_name',
         'com_add',
         'party_location',

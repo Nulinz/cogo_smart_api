@@ -14,9 +14,7 @@ class Farmer extends Model
     protected $fillable = [
         'farm_seq',
         'farm_en',
-        'farm_kn',
         'farm_nick_en',
-        'farm_nick_kn',
         'location',
         'ph_no',
         'wp_no',

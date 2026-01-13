@@ -15,12 +15,17 @@ class Exp_ser
    
     // function to create expenses
     public static function create_expense(array $data){
+
+
+      $status =  Auth::guard('tenant')->user()->role=='admin' ? 'approved' : 'pending';
+
        
         $exp = Expense::create([
             'title' => $data['title'],
             'exp_cat'    => $data['exp_cat'],
             'amount'  => $data['amount'],
             'notes'  => $data['notes'],
+            'status'    => $status, 
             'c_by'    => Auth::guard('tenant')->user()->id ?? null,
         ]);
         
@@ -78,6 +83,8 @@ class Exp_ser
         $type = $data['type'] ?? 'week';
 
         $now  = Carbon::now();
+
+        // \Log::info("Expense Type Requested: $type");
 
     switch ($type) {
         case 'week':
