@@ -41,4 +41,9 @@ class Shift extends Model
     {
         return $this->belongsTo(Party::class, 'party_id');
     }
+
+    public function product_data()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
 }

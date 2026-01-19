@@ -145,7 +145,7 @@ class Load_ser
     {
         $load_id = $data['load_id'];
     
-        $query = Load::with(['farmer_data:id,farm_en,location', 'product_data:id,name_en','load_data:id,load_seq,veh_no,team','shift_load_data.load_data:id,load_seq'])->where('load_id', $load_id)->orderBy('id', 'desc')->get();
+        $query = Load::with(['farmer_data:id,farm_en,location', 'product_data:id,name_en','load_data:id,load_seq,veh_no,team','shift_load_data.load_data:id,load_seq', 'quality_details:id,quality'])->where('load_id', $load_id)->orderBy('id', 'desc')->get();
 
         $query->map(function($item){
             // $item->load_piece = 0; // Access the appended attribute to load team members

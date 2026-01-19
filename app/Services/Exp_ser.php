@@ -65,6 +65,8 @@ class Exp_ser
 
         $expense = Expense::with(['exp_category:id,cat','exp_cby:id,name'])->whereDate('created_at', today())->where('status','approved')->get();
 
+        // dd($expense->toArray());
+
        $exp_group = $expense
                     ->groupBy('exp_cat')
                     ->mapWithKeys(function ($group) {
@@ -75,8 +77,10 @@ class Exp_ser
                     });
 
         $exp_list = Expense::with(['exp_category:id,cat','exp_cby:id,name'])->whereDate('created_at', today())->orderBy('created_at', 'desc')->where('status','pending')->get();
+
+        // \Log::info("Expense Home Data", ['exp_group' => $exp_list, 'total_expense' => $expense->sum('amount')]);
        
-        return ['exp_group' => $exp_group, 'exp_list' => $exp_list,'total_expense' => $expense->sum('amount')];
+        return ['exp_group' => $exp_group, 'exp_list' => $exp_list, 'total_expense' => $expense->sum('amount')];
 
     }
 
@@ -164,7 +168,7 @@ class Exp_ser
             return $item;
         });
 
-        $exp_balance = ($exp_approve->sum('amount') - $exp_transaction->sum('amount'));
+        $exp_balance = ($exp_approve->where('status','approved')->sum('amount') - $exp_transaction->sum('amount'));
 
         $exp_pending = $exp_approve->where('status','pending')->sum('amount');
 
@@ -172,7 +176,8 @@ class Exp_ser
 
         $exp_out = $exp_transaction->sum('amount');
 
-        return ['user_profile' => $user_profile,
+        return [
+                'user_profile' => $user_profile,
                 'exp_balance' => $exp_balance,
                 'exp_pending' => $exp_pending,
                 'exp_transaction' => $exp_data

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('m_db', function (Blueprint $table) {
             $table->id();
             $table->string('db_name');
-            $table->unsignedBigInteger('f_id');
+            $table->integer('f_id');
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });

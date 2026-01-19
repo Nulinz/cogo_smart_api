@@ -59,7 +59,7 @@ class Stock_ser
                         'billing_piece'     => $remaining_billing,
                         'grace_piece'       => $remaining_grace,
                         'avg_price'         => round($avg_price, 2),
-                        'product_amount'      => round(($remaining_billing+$remaining_grace) * $avg_price),
+                        'product_amount'      => round(($remaining_billing) * $avg_price),
                     ];
                 })->values();
 
@@ -595,6 +595,39 @@ class Stock_ser
         }
 
         return $invoice;
+   }
+
+   // function to generate invoice pdf
+
+   public static function invoice_pdf(array $data)
+   {
+
+        if(($data['type']==='invoice')){
+            
+        //    $inv_data = Self::get_invoice($data);
+          $inv_data =  M_invoice::where('id', $data['load_id'])->with(['invoice_items','load_data','invoice_items.product_data:id,name_en','load_data.party_data:id,party_en,party_location'])->get();
+
+        }else if(($data['type']=='sales')){
+            // get e invoice data
+            $inv_data = Stock_out::with(['product:id,name_en'])->where('id', $data['load_id'])->get();
+        }else{
+            $inv_data = Shift::with(['product_data:id,name_en'])->where('id', $data['load_id'])->get();
+        }
+
+        return $inv_data;
+
+
+
+
+        // $load_id = $data['load_id'];
+
+        // $invoice = M_invoice::where('load_id', $load_id)->with(['invoice_items','load_data','invoice_items.product_data:id,name_en','load_data.party_data:id,party_en,party_location'])->orderby('id','desc')->first();
+
+        // if(!$invoice){
+        //     throw new \Exception('Invoice not found');
+        // }
+
+        // return $invoice;
    }
     
 }

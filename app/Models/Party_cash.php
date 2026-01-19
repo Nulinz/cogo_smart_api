@@ -19,13 +19,17 @@ class Party_cash extends Model
         'status'
     ];
 
+     protected $casts = [
+        'created_at' => 'datetime:d-m-Y H:i:s',
+    ];
+
     public function party()
     {
         return $this->belongsTo(Party::class, 'party_id', 'id');
     }
 
-    public function getCreatedAtAttribute($value)
-    {
-        return date('d-m-Y H:i:s', strtotime($value));
-    }
+    // public function getCreatedAtAttribute($value)
+    // {
+    //     return date('d-m-Y H:i:s', strtotime($value));
+    // }
 }

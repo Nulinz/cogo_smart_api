@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('m_invoice', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('load_id')->nullable();
-            $table->unsignedBigInteger('ext_piece')->nullable();
+            $table->integer('load_id')->nullable();
+            $table->integer('ext_piece')->nullable();
             $table->decimal('ext_amount', 10, 2)->nullable();
             $table->decimal('grace_per', 10, 2)->nullable();
             $table->decimal('price', 10, 2)->nullable();
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->json('final_loss')->nullable();
             $table->decimal('profit_loss', 10, 2)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('c_by')->nullable();
+            $table->integer('c_by')->nullable();
             $table->timestamps();
         });
     }

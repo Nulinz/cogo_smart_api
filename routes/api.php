@@ -157,6 +157,10 @@ Route::middleware(['tenant.db','jwt.auth'])->group(function () {
     Route::post('/get_invoice', [Stock_cnt::class, 'get_invoice']);
     Route::post('/update_loss_invoice', [Stock_cnt::class, 'update_loss_invoice']);
 
+    // invoices for party..
+
+     Route::post('/invoice_pdf', [Stock_cnt::class, 'invoice_pdf']);
+
     // add petty cash
 
     Route::post('/add_petty',[Stock_cnt::class, 'add_petty']);

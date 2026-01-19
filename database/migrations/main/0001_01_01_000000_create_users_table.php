@@ -17,10 +17,10 @@ return new class extends Migration
             $table->string('name');
             $table->string('l_name');
             $table->enum('type', ['reg', 'emp'])->default('emp');
-            $table->unsignedBigInteger('f_id')->nullable();
+            $table->integer('f_id')->nullable();
             $table->string('db_name')->nullable();
             $table->string('phone')->nullable();
-            $table->unsignedBigInteger('otp');
+            $table->integer('otp');
             $table->enum('otp_verified', ['yes', 'no'])->default('no');
             $table->timestamp('email_verified_at')->nullable();
             // $table->string('password');

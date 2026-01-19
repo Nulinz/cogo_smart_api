@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('party_pref',10)->nullable();
             $table->string('party_suf',10)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('c_by')->nullable(); 
+            $table->integer('c_by')->nullable(); 
             $table->timestamps();
         });
     }

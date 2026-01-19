@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('m_expense', function (Blueprint $table) {
             $table->id();
             $table->string('title',200)->nullable();
-            $table->unsignedBigInteger('exp_cat')->nullable();
+            $table->integer('exp_cat')->nullable();
             $table->decimal('amount', 10, 2)->nullable();
             $table->text('notes')->nullable();
             $table->enum('status', ['pending', 'approved','rejected'])->default('pending');
-            $table->unsignedBigInteger('c_by')->nullable();
+            $table->integer('c_by')->nullable();
             $table->timestamps();
         });
     }

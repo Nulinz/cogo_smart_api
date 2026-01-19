@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('filter', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('load_id')->nullable();
-            $table->unsignedBigInteger('emp_id')->nullable();
-            $table->unsignedBigInteger('total')->nullable();
+            $table->integer('load_id')->nullable();
+            $table->integer('emp_id')->nullable();
+            $table->integer('total')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('c_by')->nullable();
+            $table->integer('c_by')->nullable();
             $table->timestamps();
         });
     }

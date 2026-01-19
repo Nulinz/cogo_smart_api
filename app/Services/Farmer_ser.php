@@ -9,6 +9,7 @@ use App\Models\Farmer_cash;
 use App\Models\Bank;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class Farmer_ser
 {
@@ -89,7 +90,27 @@ class Farmer_ser
 
     public static function get_all_farmers()
     {
-        $data = Farmer::where('status', 'active')->orderBy('fav','DESC')->get();
+        $data = Farmer::where('status', 'active')->orderBy('fav','DESC')->get()->map(function ($farmer) {
+
+                $loadPending = Load::where('farmer_id', $farmer->id)
+                    ->sum(DB::raw('total_amt - IFNULL(adv,0)'));
+
+                $stockPending = Stock_in::where('cat', 'purchase')
+                    ->where('farm_id', $farmer->id)
+                    ->sum(DB::raw('total_amt - IFNULL(adv,0)'));
+
+                $paidAmount = Farmer_cash::where('farm_id', $farmer->id)
+                    ->where('type', 'purchase')
+                    ->sum('amount');
+
+                $purchase_pending = ($loadPending + $stockPending) - $paidAmount;
+
+                $farmer->farmer_pend = $farmer->open_type === 'give'
+                    ? $purchase_pending + $farmer->open_bal
+                    : $purchase_pending - $farmer->open_bal;
+
+                return $farmer;
+        });
 
         $give_bal = 0;
         $get_bal  = 0;
@@ -135,6 +156,7 @@ class Farmer_ser
                     'fav'          => $farmer->fav,
                     'adv_card'     => $adv_pending,
                     'balance_card' => $purchase_pending,
+                    'farmer_pend'  => $farmer->farmer_pend,
                 ];
             });
 
@@ -152,7 +174,7 @@ class Farmer_ser
 
         // \Log::info('Farmer ID: ' . $farm_id);
 
-        $data = Farmer::select('id as farm_id','farm_en', 'farm_nick_en', 'location', 'ph_no','wp_no','fav','open_type','open_bal')
+        $data = Farmer::select('id as farm_id','farm_en', 'farm_nick_en', 'location', 'ph_no','wp_no','fav','open_type','open_bal','created_at')
                 ->where('id', $farm_id)
                 ->first();
 
@@ -178,10 +200,27 @@ class Farmer_ser
            return $item;
         });
 
-        $transactions = Farmer_cash::with(['load_data:id,load_seq'])->where('farm_id', $farm_id)->orderBy('created_at', 'desc')->get()->map(function($item){
+        $transactions = Farmer_cash::with(['load_data:id,load_seq','created_by:id,name'])->where('farm_id', $farm_id)->orderBy('created_at','desc')->get()->map(function($item){
            $item->table = 'farmer_cash';
            return $item;
         });
+
+        $famer_open_bal = collect([
+            (object)[
+                'id' => null,
+                'farm_id' => $farm_id,
+                'open_type' => $data->open_type,
+                'amount' => $data->open_bal,
+                'method' => null,
+                'status' => null,
+                'c_by' => null,
+                'date' => date("Y-m-d H:i:s", strtotime($data->created_at)),
+                'created_at' => Carbon::parse($data->created_at),
+                'table' => 'opening_balance',
+            ]
+        ]);
+
+        // dd($famer_open_bal);
 
         // merge load and stock in
         $merge = $load->merge($stock_in)->sortByDesc('created_at')->values();
@@ -201,10 +240,12 @@ class Farmer_ser
 
         // \Log::info('Final Balance: ' . $final_bal);
 
+        $transact_list = $transactions->concat($famer_open_bal)->sortByDesc('created_at')->values();
+
         $resp =[
             'profile' => $data,
             'loads'   => $merge,
-            'transactions' => $transactions,
+            'transactions' => $transact_list,
         ];
 
        return $resp;

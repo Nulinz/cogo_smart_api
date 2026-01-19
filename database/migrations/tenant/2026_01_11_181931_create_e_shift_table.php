@@ -14,18 +14,18 @@ return new class extends Migration
         Schema::create('e_shift', function (Blueprint $table) {
             $table->id();
             $table->enum('cat', ['load', 'others','stock'])->default('load');
-            $table->unsignedBigInteger('load_id')->nullable();
-            $table->unsignedBigInteger('to_load')->nullable();
-            $table->unsignedBigInteger('party_id')->nullable();
-            $table->unsignedBigInteger('product_id')->nullable();
-            $table->unsignedBigInteger('total_piece')->nullable();
-            $table->unsignedBigInteger('grace_piece')->nullable();
+            $table->integer('load_id')->nullable();
+            $table->integer('to_load')->nullable();
+            $table->integer('party_id')->nullable();
+            $table->integer('product_id')->nullable();
+            $table->integer('total_piece')->nullable();
+            $table->integer('grace_piece')->nullable();
             $table->decimal('grace_per', 10, 1)->nullable();
-            $table->unsignedBigInteger('bill_piece')->nullable();
+            $table->integer('bill_piece')->nullable();
             $table->decimal('price', 10, 2)->nullable();
             $table->decimal('bill_amount', 15, 2)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('c_by')->nullable();
+            $table->integer('c_by')->nullable();
             $table->timestamps();
         });
     }

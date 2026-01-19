@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('truck_cap', function (Blueprint $table) {
             $table->id();
             $table->string('capacity');
-            $table->string('charge',5)->nullable();
+            $table->string('charge',10)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('c_by')->nullable(); 
+            $table->integer('c_by')->nullable(); 
             $table->timestamps();
         });
     }

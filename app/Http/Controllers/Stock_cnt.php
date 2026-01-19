@@ -452,4 +452,35 @@ class Stock_cnt extends Controller
        
         return response()->json(['success' => true, 'data' => $result], 200);
     }   
+
+    // function for invoice pdf
+
+    public function invoice_pdf(Request $request)
+    {
+        $rules = [
+            'load_id' => 'required|string',
+            'type'=>'required|string|in:invoice,sales,others',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        
+        try{
+
+            $result = Stock_ser::invoice_pdf($validator->validated());
+
+        }catch(\Exception $e){
+
+            Log::error('Error in invoice_pdf: '.$e->getMessage());
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+        }
+       
+        return response()->json(['success' => true, 'data' => $result], 200);
+    }
 }

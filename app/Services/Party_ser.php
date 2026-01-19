@@ -266,7 +266,7 @@ class Party_ser
 
         // \Log::info('Party ID: ' . $party_id);
 
-        $data = Party::select('id as party_id','party_en', 'party_nick_en', 'party_location', 'party_ph_no','party_wp_no','fav','party_open_type','party_open_bal')
+        $data = Party::select('id as party_id','party_en', 'party_nick_en', 'party_location', 'party_ph_no','party_wp_no','fav','party_open_type','party_open_bal','created_at')
                 ->where('id', $party_id)
                 ->first();
 
@@ -304,7 +304,7 @@ class Party_ser
         $inv_amount = $inv_data->sum('total_amt');
 
 
-        $party_others = Shift::where('cat','others')->where('party_id', $party_id)->where('status', 'active')->get()->map(function ($item) {
+        $party_others = Shift::with(['product_data:id,name_en'])->where('cat','others')->where('party_id', $party_id)->where('status', 'active')->get()->map(function ($item) {
                             $item->source = 'others';
                             return $item;
                         });
@@ -312,13 +312,28 @@ class Party_ser
         $party_other_amount = $party_others->sum('bill_amount');
 
        
-        $party_stock = Stock_out::where('cat','sales')->where('farm_id', $party_id)->select('id', 'total_piece','bill_amount', 'created_at')->get()->map(function ($item) {
+        $party_stock = Stock_out::with(['product:id,name_en'])->where('cat','sales')->where('farm_id', $party_id)->select('id', 'total_piece','bill_amount', 'created_at','product_id')->get()->map(function ($item) {
                     $item->source = 'sales';
                     return $item;
                 });
 
         $party_sales = $party_stock->sum('bill_amount');
-        $party_trans = $party_cash->concat($inv_data)->concat($party_others)->concat($party_stock)
+
+        $party_open_balance = collect([
+            (object)[
+                'id' => null,
+                'open_type' => $data->party_open_type,
+                'amount' => $data->party_open_bal,
+                'method' => null,
+                'status' => null,
+                'c_by' => null,
+                'date' => date("Y-m-d H:i:s",strtotime($data->created_at)),
+                'created_at' => $data->created_at,
+                'table' => 'opening_balance',
+            ]
+        ]);
+
+        $party_trans = $party_cash->concat($inv_data)->concat($party_others)->concat($party_stock)->concat($party_open_balance)
         ->map(function ($item) {
             
          if ($item->created_at instanceof Carbon) {

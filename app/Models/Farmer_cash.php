@@ -22,10 +22,14 @@ class Farmer_cash extends Model
         'c_by',
     ];
 
-    public function getCreatedAtAttribute($value)
-    {
-        return date('d-m-Y H:i:s', strtotime($value));
-    }
+    protected $casts = [
+        'created_at' => 'datetime:d-m-Y H:i:s',
+    ];
+
+    // public function getCreatedAtAttribute($value)
+    // {
+    //     return date('d-m-Y H:i:s', strtotime($value));
+    // }
 
     public function farm_data()
     {
@@ -35,6 +39,11 @@ class Farmer_cash extends Model
     public function load_data()
     {
         return $this->belongsTo(Prime_load::class, 'load_id', 'id');
+    }
+
+    public function created_by()
+    {
+        return $this->belongsTo(User::class, 'c_by', 'id');
     }
 
 }

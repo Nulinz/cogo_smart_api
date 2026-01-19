@@ -14,21 +14,21 @@ return new class extends Migration
         Schema::create('stock_out', function (Blueprint $table) {
             $table->id();
             $table->enum('cat', ['load', 'sales'])->default('load');
-            $table->unsignedBigInteger('load_id')->nullable();
-            $table->unsignedBigInteger('farm_id')->nullable();
-            $table->unsignedBigInteger('product_id')->nullable();
-            $table->unsignedBigInteger('total_piece')->nullable();
-            $table->unsignedBigInteger('grace_piece')->nullable();
+            $table->integer('load_id')->nullable();
+            $table->integer('farm_id')->nullable();
+            $table->integer('product_id')->nullable();
+            $table->integer('total_piece')->nullable();
+            $table->integer('grace_piece')->nullable();
             $table->decimal('grace_per', 10, 2)->default(0);
-            $table->unsignedBigInteger('bill_piece')->nullable();
+            $table->integer('bill_piece')->nullable();
             $table->decimal('price', 10, 2)->nullable();
-            $table->unsignedBigInteger('commission')->nullable();
+            $table->integer('commission')->nullable();
             $table->decimal('bill_amount', 15, 2)->nullable();
-            $table->unsignedBigInteger('adv')->nullable();
-            $table->unsignedBigInteger('quality')->nullable();
+            $table->integer('adv')->nullable();
+            $table->integer('quality')->nullable();
             $table->decimal('total_amt', 15, 2)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('c_by')->nullable();
+            $table->integer('c_by')->nullable();
             $table->timestamps();
         });
     }

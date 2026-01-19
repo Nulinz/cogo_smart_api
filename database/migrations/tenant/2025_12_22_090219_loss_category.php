@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('loss',200)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('c_by')->nullable(); 
+            $table->integer('c_by')->nullable(); 
             $table->timestamps();
         });
     }

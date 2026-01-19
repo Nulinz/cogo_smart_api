@@ -56,8 +56,8 @@ class Load extends Model
         return date('d-m-Y H:i:s', strtotime($value));
     }
 
-    // public function party_details()
-    // {
-    //     return $this->belongsTo(Party::class, 'party_id', 'id');
-    // }
+    public function quality_details()
+    {
+        return $this->belongsTo(Quality::class, 'quality', 'id');
+    }
 }

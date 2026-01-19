@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('bank_details', function (Blueprint $table) {
             $table->id();
             $table->enum('type', ['farmer', 'party','emp']);
-            $table->unsignedBigInteger('f_id')->nullable();
+            $table->integer('f_id')->nullable();
             $table->string('acc_type',30)->nullable();
             $table->string('b_name',100)->nullable();
             $table->string('acc_name',100)->nullable();
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('ifsc',30)->nullable();
             $table->string('upi',50)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('c_by')->nullable();
+            $table->integer('c_by')->nullable();
             $table->timestamps();
         });
     }

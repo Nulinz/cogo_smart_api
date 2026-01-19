@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('party_ph_no',15)->nullable();
             $table->string('party_wp_no',15)->nullable();
             $table->enum('party_open_type', ['give', 'get'])->nullable();
-            $table->unsignedBigInteger('party_open_bal')->nullable();
+            $table->integer('party_open_bal')->nullable();
             $table->string('party_acc_type',30)->nullable();
             $table->string('party_b_name',100)->nullable();
             $table->string('party_acc_name',100)->nullable();
@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('party_ifsc',30)->nullable();
             $table->string('party_upi',50)->nullable();
             $table->unsignedInteger('fav')->default(0); // if count > 0 then favorite
-            $table->unsignedBigInteger('c_by')->nullable(); 
+            $table->integer('c_by')->nullable(); 
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });

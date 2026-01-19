@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('transport');
             $table->string('phone',15)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('c_by')->nullable(); 
+            $table->integer('c_by')->nullable(); 
             $table->timestamps();
         });
     }

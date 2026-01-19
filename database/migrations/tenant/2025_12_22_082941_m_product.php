@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name_en',255)->nullable();
             $table->enum('type', ['auto', 'manual'])->default('manual');
-            $table->unsignedBigInteger('c_by')->nullable(); 
+            $table->integer('c_by')->nullable(); 
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });

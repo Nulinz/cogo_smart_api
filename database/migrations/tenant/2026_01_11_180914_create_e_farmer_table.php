@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('e_farmer', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('farm_id')->nullable();
-            $table->unsignedBigInteger('load_id')->nullable();
+            $table->integer('farm_id')->nullable();
+            $table->integer('load_id')->nullable();
             $table->enum('type', ['advance', 'purchase','advance_deduct'])->nullable()->default('advance');
             $table->decimal('amount', 10, 2)->default(0);
             $table->string('method',100)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('c_by')->nullable();
+            $table->integer('c_by')->nullable();
             $table->timestamps();
         });
     }

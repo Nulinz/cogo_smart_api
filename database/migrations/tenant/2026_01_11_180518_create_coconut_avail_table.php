@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('coconut_avail', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('farm_id')->nullable();
-            $table->unsignedBigInteger('coconut')->nullable();
+            $table->integer('farm_id')->nullable();
+            $table->integer('coconut')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('c_by')->nullable();
+            $table->integer('c_by')->nullable();
             $table->timestamps();
         });
     }
