@@ -17,7 +17,11 @@ class Exp_ser
     public static function create_expense(array $data){
 
 
-      $status =  Auth::guard('tenant')->user()->role=='admin' ? 'approved' : 'pending';
+      $user = Auth::guard('tenant')->user();
+
+        $status = ($user && $user->role === 'admin')
+            ? 'approved'
+            : 'pending';
 
        
         $exp = Expense::create([

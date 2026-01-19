@@ -25,7 +25,7 @@ class Load_cnt extends Controller
             'dr_no' => 'required|string',
             'transporter' => 'required|string',
             'quality_price' => 'required|string',
-            'fliter_price' => 'required|string',
+            'filter_price' => 'required|string',
             'req_qty' => 'required|string',
             'truck_capacity' => 'required|string',
             'team' => 'required',

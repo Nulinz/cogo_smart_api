@@ -17,7 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('exp_cat')->nullable();
             $table->decimal('amount', 10, 2)->nullable();
             $table->text('notes')->nullable();
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->enum('status', ['pending', 'approved','rejected'])->default('pending');
             $table->unsignedBigInteger('c_by')->nullable();
             $table->timestamps();
         });

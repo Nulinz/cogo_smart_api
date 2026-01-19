@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('load_id')->nullable();
             $table->unsignedBigInteger('ext_piece')->nullable();
             $table->decimal('ext_amount', 10, 2)->nullable();
+            $table->decimal('grace_per', 10, 2)->nullable();
             $table->decimal('price', 10, 2)->nullable();
             $table->json('charges')->nullable();
             $table->text('description')->nullable();

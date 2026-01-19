@@ -342,7 +342,7 @@ class Party_ser
         $in_cash = $party_cash->where('type','pay_in')->sum('amount');
         $out_cash = $party_cash->where('type','pay_out')->sum('amount');
 
-        $bal = ($inv_amount + $party_sales + $out_cash + $party_other_amount) - $in_cash ;
+        $bal = ($inv_amount + $party_sales + $party_other_amount + $out_cash) - $in_cash ;
     
         // \Log::info('inv amount: ' . $inv_amount);
         // \Log::info('party sales: ' . $party_sales);

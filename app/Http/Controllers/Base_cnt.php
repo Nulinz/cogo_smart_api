@@ -296,6 +296,7 @@ class Base_cnt extends Controller
     {
         $rule = [
             'type' => 'required|string|in:farmer,party,emp',
+            'prime_id' => 'nullable|string',
             'f_id' => 'required|string',
             'acc_type' => 'required|string',
             'b_name' => 'required|string',
@@ -319,7 +320,7 @@ class Base_cnt extends Controller
         try{
         if( $request->method == 'update' ) {
             $bank = Bank::where('type', $request->type)
-                         ->where('f_id', $request->f_id)
+                         ->where('id', $request->prime_id)
                          ->first();
 
             if( !$bank ) {
@@ -381,6 +382,7 @@ class Base_cnt extends Controller
         $rule = [
             'type' => 'required|string|in:farmer,party,emp',
             'f_id' => 'required|string',
+            'prime_id' => 'nullable|string',
 
         ];
 
@@ -396,7 +398,7 @@ class Base_cnt extends Controller
         try{
 
         $bank = Bank::where('type', $request->type)
-                     ->where('f_id', $request->f_id)
+                     ->where('id', $request->prime_id)
                      ->first();
 
             return response()->json([

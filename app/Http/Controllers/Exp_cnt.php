@@ -16,7 +16,7 @@ class Exp_cnt extends Controller
 
     public function create_expense(Request $request)
     {
-        Log::info("Create Expense Request", ['request' => $request->all()]);
+        // Log::info("Create Expense Request", ['request' => $request->all()]);
 
         // Validation rules
         $rules = [
@@ -38,7 +38,7 @@ class Exp_cnt extends Controller
         }
 
         try{
-             // Create Expenseexpense_home
+             // Create Expense
              $expense = Exp_ser::create_expense($validator->validated());
         }catch(\Exception $e){
             Log::error("Validation Error", ['error' => $e->getMessage()]);

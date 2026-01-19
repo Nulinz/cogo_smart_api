@@ -28,7 +28,7 @@ class Prime_load extends Model
         'dr_no',
         'transporter',
         'quality_price',
-        'fliter_price',
+        'filter_price',
         'req_qty',
         'truck_capacity',
         'team',

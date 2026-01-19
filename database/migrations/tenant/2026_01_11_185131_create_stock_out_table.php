@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('farm_id')->nullable();
             $table->unsignedBigInteger('product_id')->nullable();
             $table->unsignedBigInteger('total_piece')->nullable();
+            $table->unsignedBigInteger('grace_piece')->nullable();
             $table->decimal('grace_per', 10, 2)->default(0);
             $table->unsignedBigInteger('bill_piece')->nullable();
             $table->decimal('price', 10, 2)->nullable();

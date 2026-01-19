@@ -131,7 +131,12 @@ class Product_cnt extends Controller
     public function get_product_list(Request $request)
     {
         try {
+
+        if($request->has('status')){
+            $products = Product::where('status', $request->status)->get();
+        }else{
             $products = Product::all();
+        }
 
             return response()->json([
                 'success' => true,
@@ -146,7 +151,7 @@ class Product_cnt extends Controller
         }
     }
 
-    // fucntion to get product details
+    // function to get product details
 
     public function get_product_details(Request $request)
     {

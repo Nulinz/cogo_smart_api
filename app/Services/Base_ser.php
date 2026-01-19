@@ -271,7 +271,7 @@ class Base_ser
     {
         $today = date('Y-m-d');
 
-        $coconut =  Coconut::with(['emp_data:id,name,location'])->whereDate('created_at', $today)->get();
+        $coconut =  Coconut::with(['emp_data:id,name,location,role'])->whereDate('created_at', $today)->get();
 
         $coconut_sum = $coconut->sum('coconut');
 
@@ -281,6 +281,7 @@ class Base_ser
                 return [
                     'emp_name'       => $emp->name ?? null,
                     'location'       => $emp->location ?? null,
+                    'role'           => $emp->role ?? null,
                     'farmer_count'   => $item->groupBy('farm_id')->count(),
                     'total_coconut'  => $item->sum('coconut'),
                 ];

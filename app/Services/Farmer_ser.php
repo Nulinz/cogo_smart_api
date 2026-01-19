@@ -239,10 +239,10 @@ class Farmer_ser
         // Logic to process pay out can be added here
 
         $farm_cash = Farmer_cash::create([
-            'farm_id' => $data['farm_id'],
+            'farm_id' => $data['farm_id'] ?? null,
             'type'    => $data['type'],
             'amount'  => $data['amount'],
-            'method'  => $data['pay_method'],
+            'method'  => $data['pay_method'] ?? 'Cash',
             'c_by'    => Auth::guard('tenant')->user()->id ?? null,
         ]);
         
@@ -255,7 +255,7 @@ class Farmer_ser
         // Logic to process pay in can be added here
 
         $farm_cash = Farmer_cash::create([
-            'farm_id' => $data['farm_id'],
+            'farm_id' => $data['farm_id'] ?? null,
             'load_id' => $data['load_id'] ?? null,
             'type'    => $data['type'],
             'amount'  => $data['amount'],
