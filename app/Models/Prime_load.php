@@ -116,7 +116,7 @@ class Prime_load extends Model
 
     public function truck_capacity()
     {
-        return $this->hasMany(Truck_capacity::class, 'id','truck_capacity');
+        return $this->belongsTo(Truck_capacity::class, 'truck_capacity','id');
     }
 
     public function product_data()

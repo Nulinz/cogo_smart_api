@@ -378,6 +378,11 @@ class Stock_ser
 
         $shift_data = Shift::where('load_id', $load_id)->get();
 
+
+        $prime_load = Prime_load::with(['truck_capacity:id,capacity,charge'])->where('id', $load_id)->first();
+
+        $t_cap = $prime_load->truck_capacity()->first();
+
         
 
 
@@ -393,6 +398,7 @@ class Stock_ser
             'party_data'          => $query->first()->load_data->party_data ?? null,
             'filter_piece'        => Filter::where('load_id', $load_id)->sum('total'),
             'load_empty_weight'   => $query->first()->load_data->empty_weight ?? null,
+            'loading_charge'      => $t_cap->charge ?? null,
             ];
 
         return $summary;

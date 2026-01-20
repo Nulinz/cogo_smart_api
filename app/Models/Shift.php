@@ -46,4 +46,9 @@ class Shift extends Model
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
+
+    public function getCreatedAtAttribute($value)
+    {
+        return date('d-m-Y H:i:s', strtotime($value));
+    }
 }
