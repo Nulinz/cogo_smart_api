@@ -12,6 +12,7 @@ use App\Models\Petty_cash;
 use App\Models\Farmer_cash;
 use App\Services\Stock_ser;
 use App\Models\Sequence;
+use App\Models\Kyc;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -69,7 +70,7 @@ class Register_cnt extends Controller
 
             // app(Otp::class)->sendOtp($request->phone, $otp);
 
-            \Log::info("OTP for ".$request->phone." is ".$otp);
+            // \Log::info("OTP for ".$request->phone." is ".$otp);
 
             Tenant_db::main(); // switch to main DB
             $masterUser = DB::table('users')->where('phone', $request->phone)->first();
@@ -806,4 +807,138 @@ class Register_cnt extends Controller
     {
         return response()->json(['count' => Sequence::count()]);
     }
+
+
+    public function forgot_password(Request $request)
+    {
+        $rule = [
+            'phone' => 'required|string',
+            'new_password' => 'required|string',
+
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            Tenant_db::main(); // switch to main DB
+
+            $mainUser = DB::table('users')->where('phone', $request->phone)->first();
+
+            if (! $mainUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found',
+                    
+                ], 404);
+            }
+
+            Tenant_db::connect($mainUser->db_name); // switch to tenant DB
+
+            $user = User::where('phone', $request->phone)->update([
+                'password' => $request->new_password,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password reset successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password reset failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to add kyc and company name
+
+    public  function add_kyc(Request $request)
+    {
+        $rule = [
+            'f_name' => 'required|string',
+            'phone' => 'required|string',
+            'email' => 'required|string',
+            'dob' => 'required|string',
+            'com_name' => 'required|string',
+            'com_address' => 'required|string',
+            'com_gst' => 'required|string',
+            'com_pan' => 'required|string',
+        
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if( $validator->fails()){
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try{
+
+            $user = Auth::guard('tenant')->user(); // ✅ Works now
+
+            $kyc = Kyc::create([
+
+                    'user_id' => Auth::guard('tenant')->user()->id,
+                    'f_name' => $request->f_name,
+                    'phone' => $request->phone,
+                    'email' => $request->email,
+                    'dob' => $request->dob,
+                    'com_name' => $request->com_name,
+                    'com_address' => $request->com_address,
+                    'com_gst' => $request->com_gst,
+                    'com_pan' => $request->com_pan,
+                    'c_by' => Auth::guard('tenant')->user()->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+
+            ]);
+                    
+               
+
+            return response()->json([
+                'success' => true,
+                'message' => 'KYC details added successfully',
+            ], 200);
+
+        } catch (\Exception $e){
+            return response()->json([
+                'success' => false,
+                'message' => 'KYC details addition failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function to get kyc details
+
+    public function get_kyc(Request $request)
+    {
+        try{
+
+            $user = Auth::guard('tenant')->user(); // ✅ Works now
+
+            $kyc = Kyc::where('user_id', $user->id)->first();
+
+            return response()->json([
+                'success' => true,
+                'data' => $kyc,
+            ], 200);
+
+        } catch (\Exception $e){
+            return response()->json([
+                'success' => false,
+                'message' => 'KYC details fetch failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
 }

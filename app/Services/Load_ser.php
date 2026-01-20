@@ -247,7 +247,7 @@ class Load_ser
 
     public static function add_purchase(array $data)
     {
-        return Stock_in::create(
+        $purchase =  Stock_in::create(
             [
                 'cat' => $data['cat'],
                 'load_id' => $data['load_id'],
@@ -267,6 +267,15 @@ class Load_ser
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
             ]
         );
+
+        if($data['adv'] > 0){
+            // update farmer advance
+
+            $farmer = Farmer_ser::farmer_pay_in(['farm_id' => $data['farmer_id'],'amount' => $data['adv'], 'type' => 'advance_deduct','load_id' => $data['load_id']]);
+
+        }
+
+        return $purchase;
     }
 
     // function to add stock out entry

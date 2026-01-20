@@ -217,4 +217,40 @@ class Party_cnt extends Controller
             ], 500);
         }
     }
+
+    // function for party pay edit
+
+    public function party_pay_edit(Request $request)
+    {
+        $rule = [
+            'payment_id' => 'required|string',
+            'amount' => 'required|string',
+            'pay_method' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try{
+            $party_cash = Party_ser::party_pay_edit($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Party pay edit successful',
+                'data' => $party_cash,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Party pay edit failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 }

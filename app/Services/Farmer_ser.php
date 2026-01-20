@@ -122,7 +122,7 @@ class Farmer_ser
 
         $stock_in = Stock_in::where('cat','purchase')->whereNotNull('farm_id')->get();
 
-        $merge = $load->merge($stock_in)->sortByDesc('created_at')->values();
+        $merge = $load->concat($stock_in)->sortByDesc('created_at')->values();
 
         $transactions = Farmer_cash::all();
 
@@ -193,6 +193,8 @@ class Farmer_ser
            return $item;
         });
 
+        // dd($load->toArray());
+
         $stock_in = Stock_in::where('cat','purchase')->where('farm_id', $farm_id)->get()->map(function($item){
            $item->table = 'stock_in';
             $adv = $item->adv ?? 0;
@@ -214,7 +216,7 @@ class Farmer_ser
                 'method' => null,
                 'status' => null,
                 'c_by' => null,
-                'date' => date("Y-m-d H:i:s", strtotime($data->created_at)),
+                'date' => date("d-m-Y H:i:s", strtotime($data->created_at)),
                 'created_at' => Carbon::parse($data->created_at),
                 'table' => 'opening_balance',
             ]
@@ -223,7 +225,7 @@ class Farmer_ser
         // dd($famer_open_bal);
 
         // merge load and stock in
-        $merge = $load->merge($stock_in)->sortByDesc('created_at')->values();
+        $merge = $load->concat($stock_in)->sortByDesc('created_at')->values();
         $purchase_pending = $merge->sum('farmer_pend') -  ($transactions->where('type', 'purchase')->sum('amount'));
 
         if ($data->open_type === 'give') {
@@ -308,6 +310,32 @@ class Farmer_ser
        return $farm_cash;
     }
 
+    // function to edit farmer pay
+
+    public static function farmer_pay_edit(array $data){
+
+        $farm_cash = Farmer_cash::find($data['payment_id'] ?? 0);
+        if ($farm_cash) {
+                // Fill the model with new data
+            $farm_cash->fill([
+                // 'farm_id' => $data['farm_id'] ?? null,
+                // 'load_id' => $data['load_id'] ?? null,
+                // 'type'    => $data['type'],
+                'amount'  => $data['amount'],
+                'method'  => $data['pay_method'] ?? 'Cash',
+            ]);
+
+            // Save only if there are changes
+            if ($farm_cash->isDirty()) {
+                $farm_cash->save();
+            }
+
+        } else {
+            throw new \Exception('Farmer payment record not found.');
+        }
+
+       return $farm_cash;
+    }
 
 
      

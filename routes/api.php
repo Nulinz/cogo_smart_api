@@ -24,7 +24,7 @@ Route::post('/update_popup',function () {
 // auth refrehh token
 Route::post('/refresh', [Register_cnt::class, 'refresh_token']);
 
-// register
+// register........
 Route::post('/register', [Register_cnt::class, 'register']);
 Route::post('/generate_otp', [Register_cnt::class, 'generate_otp']);
 
@@ -32,6 +32,8 @@ Route::post('/login_phone', [Register_cnt::class, 'login_phone']); //--> step-1
 Route::post('/login', [Register_cnt::class, 'login']); //--> step-2
 
 Route::post('/check_mobile_register', [Register_cnt::class, 'check_mobile']);
+
+Route::post('/forgot_password', [Register_cnt::class, 'forgot_password']);
 
 Route::middleware(['tenant.db','jwt.auth'])->group(function () {
 
@@ -135,10 +137,12 @@ Route::middleware(['tenant.db','jwt.auth'])->group(function () {
 
     Route::post('/farmer_pay_out', [Farmer_cnt::class, 'farmer_pay_out']);
     Route::post('/farmer_pay_in', [Farmer_cnt::class, 'farmer_pay_in']);
+    Route::post('/farmer_pay_edit', [Farmer_cnt::class, 'farmer_pay_edit']);
 
     // party transaction
     Route::post('/party_pay_out', [Party_cnt::class, 'party_pay_out']);
     Route::post('/party_pay_in', [Party_cnt::class, 'party_pay_in']);
+    Route::post('/party_pay_edit', [Party_cnt::class, 'party_pay_edit']);
 
     // coconut availabilty
 
@@ -181,5 +185,10 @@ Route::middleware(['tenant.db','jwt.auth'])->group(function () {
     // expense list
 
      Route::post('/get_exp_list', [Exp_cnt::class, 'get_exp_list']);
+
+     // kyc and company name insert
+
+     Route::post('/add_kyc', [Register_cnt::class, 'add_kyc']);
+     Route::post('/get_kyc', [Register_cnt::class, 'get_kyc']);
 
 });

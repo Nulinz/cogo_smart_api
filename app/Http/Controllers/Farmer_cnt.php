@@ -252,4 +252,41 @@ class Farmer_cnt extends Controller
             ], 500);
         }
     }
+
+    // function for farmer pay edit
+
+    public function farmer_pay_edit(Request $request)
+    {
+        $rule = [
+            'payment_id' => 'required|string',
+            // 'farm_id' => 'required|string',
+            // 'type' => 'required|string|in:advance,advance_deduct,purchase',
+            'amount' => 'required|string',
+            'pay_method' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        try {
+            $payedit = Farmer_ser::farmer_pay_edit($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Farmer payment edited successfully',
+                'data' => $payedit,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to edit farmer payment: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 }

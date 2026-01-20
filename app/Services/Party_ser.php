@@ -327,7 +327,7 @@ class Party_ser
                 'method' => null,
                 'status' => null,
                 'c_by' => null,
-                'date' => date("Y-m-d H:i:s",strtotime($data->created_at)),
+                'date' => date("d-m-Y H:i:s",strtotime($data->created_at)),
                 'created_at' => $data->created_at,
                 'table' => 'opening_balance',
             ]
@@ -419,6 +419,31 @@ class Party_ser
             'c_by'     => Auth::guard('tenant')->user()->id ?? null,
         ]);
         
+        return $party_cash;
+
+    }
+
+    // function to edit party pay In/Out
+
+    public static function party_pay_edit(array $data){
+
+        $party_cash = Party_cash::findOrFail($data['payment_id']);
+
+        if(! $party_cash) {
+            throw new \Exception('Party cash record not found');
+        }
+
+        // Fill the model with new data
+        $party_cash->fill([
+            'amount' => $data['amount'],
+            'method' => $data['pay_method'],
+        ]);
+
+        // Save only if there are changes
+        if ($party_cash->isDirty()) {
+            $party_cash->save();
+        }
+
         return $party_cash;
 
     }
