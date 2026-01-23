@@ -223,7 +223,7 @@ class Base_cnt extends Controller
     public function get_coconut_emp(Request $request)
     {
         $rules = [
-            'emp_id'  => 'required|string',
+            'farm_id'  => 'required|string',
         ];
 
         $validator = Validator::make($request->all(), $rules);

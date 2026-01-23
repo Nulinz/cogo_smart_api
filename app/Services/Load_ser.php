@@ -20,6 +20,8 @@ class Load_ser
     public static function create_load(array $data)
     {
 
+    \Log::info('Create or Update Load Data: ', $data);
+
          $prime_load = Prime_load::find($data['prime_load'] ?? 0);
 
          if($prime_load) {

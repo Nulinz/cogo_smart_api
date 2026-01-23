@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('stock_out', function (Blueprint $table) {
             $table->id();
-            $table->enum('cat', ['load', 'sales'])->default('load');
+            $table->enum('cat', ['load', 'sales','inv'])->default('load');
             $table->integer('load_id')->nullable();
             $table->integer('farm_id')->nullable();
             $table->integer('product_id')->nullable();

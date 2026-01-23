@@ -245,23 +245,32 @@ class Base_ser
 
     public static function get_coconut_emp(array $data)
     {
+        // \Log::info("Fetching coconut added today by employee", ['emp_id' => $data]);
         $today = date('Y-m-d');
 
-        $coconut =  Coconut::with(['farmer_data:id,farm_en,location','emp_data:id,name'])->where('c_by', $data['emp_id'])->whereDate('created_at', $today)->get();
+        $coconut =  Coconut::with(['emp_data:id,name,location,role'])->where('farm_id', $data['farm_id'])->whereDate('created_at', $today)->get();
 
         $coconut_sum = $coconut->sum('coconut');
 
-        $farm_group = $coconut->groupBy('farm_id')->map(function ($item) {
+        $emp_group = $coconut->groupBy('c_by')->map(function ($item) {
+
+         $emp = $item->first()->emp_data;
+
             return [
-                'farm_en'  => $item->first()->farmer_data->farm_en,
-                'location' => $item->first()->farmer_data->location,
-                'total_coconut' => $item->sum('coconut'),
+                 'emp_name'       => $emp->name ?? null,
+                 'location'       => $emp->location ?? null,
+                 'role'           => $emp->role ?? null,
+                // 'farmer_count'   => $item->groupBy('farm_id')->count(),
+                'total_coconut'  => $item->sum('coconut'),
+                // 'farm_en'  => $item->first()->farmer_data->farm_en,
+                // 'location' => $item->first()->farmer_data->location,
+                // 'total_coconut' => $item->sum('coconut'),
             ];
         })->values();
 
         return [
             'coconut_sum'  => $coconut_sum,
-            'farm_group'   => $farm_group,
+            'emp_group'   => $emp_group,
         ];
     }
 
@@ -271,18 +280,18 @@ class Base_ser
     {
         $today = date('Y-m-d');
 
-        $coconut =  Coconut::with(['emp_data:id,name,location,role'])->whereDate('created_at', $today)->get();
+        $coconut =  Coconut::with(['farmer_data:id,farm_en,location'])->whereDate('created_at', $today)->get();
 
         $coconut_sum = $coconut->sum('coconut');
 
-        $emp_group = $coconut->groupBy('c_by')->map(function ($item) {
-           $emp = $item->first()->emp_data;
+        $farm_group = $coconut->groupBy('farm_id')->map(function ($item) {
+           $farmer = $item->first()->farmer_data;
 
                 return [
-                    'emp_name'       => $emp->name ?? null,
-                    'location'       => $emp->location ?? null,
-                    'role'           => $emp->role ?? null,
-                    'farmer_count'   => $item->groupBy('farm_id')->count(),
+                    'emp_name'       => $farmer->farm_en ?? null,
+                    'location'       => $farmer->location ?? null,
+                    // 'role'           => $farmer->role ?? null,
+                    // 'farmer_count'   => $item->groupBy('farm_id')->count(),
                     'total_coconut'  => $item->sum('coconut'),
                 ];
         })->values();
@@ -290,7 +299,7 @@ class Base_ser
 
          return [
             'coconut_sum'  => $coconut_sum,
-            'emp_group'   => $emp_group,
+            'farm_group'   => $farm_group,
         ];
     }
 
@@ -354,7 +363,8 @@ class Base_ser
                 'total_loaded' => $item->loaded,
                 'filtered_total' => $item->filter,
                 'pending_qty' =>$item->remain,
-                'last_farmer' =>$item->last_farmer
+                'last_farmer' =>$item->last_farmer,
+                'product_id' => $item->product_id,
             ];
 
             

@@ -604,6 +604,7 @@ class Register_cnt extends Controller
 
             //  $user = User::where('id', $request->user_id)->first();
         } catch (\Exception $e) {
+            \Log::error('Get employee details failed: '.$e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Database connection failed: '.$e->getMessage(),
@@ -870,6 +871,7 @@ class Register_cnt extends Controller
             'com_address' => 'required|string',
             'com_gst' => 'required|string',
             'com_pan' => 'required|string',
+            'file' => 'sometimes|file|mimes:jpg,jpeg,png',
         
         ];
 
@@ -886,6 +888,18 @@ class Register_cnt extends Controller
 
             $user = Auth::guard('tenant')->user(); // ✅ Works now
 
+            if($request->hasFile('file')) {
+                $file = $request->file('file');
+                $filename = 'kyc_'.time().'.'.$file->getClientOriginalExtension();
+                $filePath = 'invoices/' . $fileName;
+
+                // $filePath = $file->storeAs('kyc_files', $filename, 'public');
+            } else {
+                $filePath = null;
+            }
+
+             
+
             $kyc = Kyc::create([
 
                     'user_id' => Auth::guard('tenant')->user()->id,
@@ -897,6 +911,7 @@ class Register_cnt extends Controller
                     'com_address' => $request->com_address,
                     'com_gst' => $request->com_gst,
                     'com_pan' => $request->com_pan,
+                    'file' => $filePath,
                     'c_by' => Auth::guard('tenant')->user()->id,
                     'created_at' => now(),
                     'updated_at' => now(),

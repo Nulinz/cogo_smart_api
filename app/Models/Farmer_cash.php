@@ -26,6 +26,8 @@ class Farmer_cash extends Model
         'created_at' => 'datetime:d-m-Y H:i:s',
     ];
 
+    protected $appends = ['created_by_name'];
+
     // public function getCreatedAtAttribute($value)
     // {
     //     return date('d-m-Y H:i:s', strtotime($value));
@@ -44,6 +46,11 @@ class Farmer_cash extends Model
     public function created_by()
     {
         return $this->belongsTo(User::class, 'c_by', 'id');
+    }
+
+    public function getCreatedByNameAttribute()
+    {
+        return $this->created_by?->name ?? 'Unknown';
     }
 
 }

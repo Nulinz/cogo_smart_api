@@ -29,7 +29,8 @@ class Load extends Model
         'status',
         'c_by',
     ];
-        
+
+    protected $appends = ['created_by_name'];
     // relationships
     public function farmer_data()
     {
@@ -60,4 +61,18 @@ class Load extends Model
     {
         return $this->belongsTo(Quality::class, 'quality', 'id');
     }
+
+    public function created_by()
+    {
+        return $this->belongsTo(User::class, 'c_by', 'id');
+    }
+
+    public function getCreatedByNameAttribute()
+    {
+        return $this->created_by?->name ?? 'Unknown';
+    }
+
+    
+
+    
 }

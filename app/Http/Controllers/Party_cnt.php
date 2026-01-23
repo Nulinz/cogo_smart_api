@@ -23,12 +23,12 @@ class Party_cnt extends Controller
             'party_wp_no' => 'required|string',
             'party_open_type' => 'required|string',
             'party_open_bal' => 'required|string',
-            'party_acc_type' => 'required|string',
-            'party_b_name' => 'required|string',
-            'party_acc_name' => 'required|string',
-            'party_acc_no' => 'required|string',
-            'party_ifsc' => 'required|string',
-            'party_upi' => 'required|string',
+            'party_acc_type' => 'nullable|string',
+            'party_b_name' => 'nullable|string',
+            'party_acc_name' => 'nullable|string',
+            'party_acc_no' => 'nullable|string',
+            'party_ifsc' => 'nullable|string',
+            'party_upi' => 'nullable|string',
 
         ];
 
@@ -139,6 +139,7 @@ class Party_cnt extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+             \Log::error('Party profile error: '.$e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch party profile: '.$e->getMessage(),
@@ -247,6 +248,7 @@ class Party_cnt extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+           
             return response()->json([
                 'success' => false,
                 'message' => 'Party pay edit failed: '.$e->getMessage(),

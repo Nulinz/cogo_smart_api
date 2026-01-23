@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Party_cash;
 use App\Models\Bank;
+use App\Models\M_invoice;
 use Carbon\Carbon;
 
 class Party_ser
@@ -210,6 +211,15 @@ class Party_ser
                     $inv_amount = E_invoice::whereIn('load_id', $load_ids)
                         ->sum('bill_amt');
 
+                    $inv_prime = M_invoice::whereIn('load_id', $load_ids)
+                        ->select('id', 'charges')
+                        ->get();
+
+                    foreach ($inv_prime as $inv) {
+                        $charge_out = $inv->charges ?? [];
+                        $inv_amount += array_sum($charge_out);
+                    }
+
                     $shift_others = Shift::where('cat', 'others')
                         ->where('party_id', $item->id)
                         ->where('status', 'active')
@@ -277,6 +287,11 @@ class Party_ser
 
         $party_cash = Party_cash::where('party_id', $party_id)->select('id','type','amount','method','created_at')->get()->map(function ($item) {
                     $item->source = 'cash';
+
+                     if($item->method!='Cash' && $item->method!='upi' && $item->method!='cash' ){
+                            $item->method_details = Bank::where('id', $item->method)->select('b_name','acc_no')->first();
+                    }
+
                     return $item;
                 });
 
@@ -297,6 +312,18 @@ class Party_ser
                     $item->source = 'invoice';
                     $item->created_at = $item->invoice_date;
                     $item->load_name = Prime_load::where('id', $item->load_id)->value('load_seq');
+
+                  $prime_inv = M_invoice::where('load_id', $item->load_id)
+                    ->select('id', 'charges')
+                    ->first();
+
+                $charge_out = $prime_inv->charges ?? [];
+
+                // \Log::info('Charge Out for Load ID '.$item->load_id.': ', $charge_out);
+
+                $item->total_amt += array_sum($charge_out);
+
+                            // $item->total_amt = $item->total_amt + ($charge_out['total_charge'] ?? 0);
                     return $item;
                 });
 

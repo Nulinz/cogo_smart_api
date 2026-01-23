@@ -187,7 +187,6 @@ class Farmer_ser
 
         $load = Load::with(['load_data:id,load_seq'])->where('farmer_id', $farm_id)->get()->map(function($item){
            $item->table = 'e_load';
-
            $adv = $item->adv ?? 0;
            $item->farmer_pend = ($item->total_amt - $adv);
            return $item;
@@ -204,6 +203,11 @@ class Farmer_ser
 
         $transactions = Farmer_cash::with(['load_data:id,load_seq','created_by:id,name'])->where('farm_id', $farm_id)->orderBy('created_at','desc')->get()->map(function($item){
            $item->table = 'farmer_cash';
+
+           if($item->method!='Cash' && $item->method!='upi' && $item->method!='cash' ){
+                $item->method_details = Bank::where('id', $item->method)->select('b_name','acc_no')->first();
+           }
+
            return $item;
         });
 

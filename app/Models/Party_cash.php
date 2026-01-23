@@ -23,9 +23,21 @@ class Party_cash extends Model
         'created_at' => 'datetime:d-m-Y H:i:s',
     ];
 
+     protected $appends = ['created_by_name'];
+
     public function party()
     {
         return $this->belongsTo(Party::class, 'party_id', 'id');
+    }
+
+    public function created_by()
+    {
+        return $this->belongsTo(User::class, 'c_by', 'id');
+    }
+
+     public function getCreatedByNameAttribute()
+    {
+        return $this->created_by?->name ?? 'Unknown';
     }
 
     // public function getCreatedAtAttribute($value)

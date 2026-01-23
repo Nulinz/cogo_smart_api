@@ -23,12 +23,12 @@ class Farmer_cnt extends Controller
             'wp_no' => 'required|string',
             'open_type' => 'required|string',
             'open_bal' => 'required|string',
-            'acc_type' => 'required|string',
-            'b_name' => 'required|string',
-            'acc_name' => 'required|string',
-            'acc_no' => 'required|string',
-            'ifsc' => 'required|string',
-            'upi' => 'required|string',
+            'acc_type' => 'nullable|string',
+            'b_name' => 'nullable|string',
+            'acc_name' => 'nullable|string',
+            'acc_no' => 'nullable|string',
+            'ifsc' => 'nullable|string',
+            'upi' => 'nullable|string',
             'adv' => 'nullable|string',
 
         ];

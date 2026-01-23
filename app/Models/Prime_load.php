@@ -41,6 +41,8 @@ class Prime_load extends Model
         'team' => 'array',   // or 'json'
     ];
 
+    protected $appends = ['created_by'];
+
     protected static function booted()
     {
         static::creating(function ($model) {
@@ -134,4 +136,12 @@ class Prime_load extends Model
         return $this->hasMany(Shift::class, 'load_id', 'id');
     }
 
+   public function getCreatedByAttribute()
+    {
+        if (!$this->c_by) {
+            return 'Unknown';
+        }
+
+        return User::where('id', $this->c_by)->value('name') ?? 'Unknown';
+    }
 }

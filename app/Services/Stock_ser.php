@@ -13,6 +13,7 @@ use App\Models\E_invoice;
 use App\Models\Filter;
 use App\Models\Petty_cash;
 use App\Models\Farmer_cash;
+use App\Models\Farmer;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -32,14 +33,14 @@ class Stock_ser
                     ->map(function ($items, $productId) use ($stockOutByProduct) {
 
                     // Stock IN totals
-                    $in_billing = $items->sum('total_piece');
+                    $in_billing = $items->sum('bill_piece');
                     $in_grace   = $items->sum('grace_piece');
                   
 
                     // Stock OUT totals (safe)
                     $out_items = $stockOutByProduct->get($productId, collect());
 
-                    $out_billing = $out_items->sum('total_piece');
+                    $out_billing = $out_items->sum('bill_piece');
                     $out_grace   = $out_items->sum('grace_piece');
                    
 
@@ -409,6 +410,7 @@ class Stock_ser
 
    public static function add_invoice(array $data)
    {
+    \Log::info('Adding Invoice Data: ', $data);
         $load_id = $data['load_id'];
 
         $load = Load::where('id', $load_id)->first();
@@ -467,7 +469,34 @@ class Stock_ser
             ]);
 
             $e_inv->save();
+
+
+          $bill_piece = $pr['total'] - ($pr['total'] * ($pr['grace'] / 100));
+
+
+           $stock_out = Stock_out::create([
+                'cat'         => 'inv',
+                'product_id'  => $pr['product'] ?? null,
+                'load_id'     => $load_id,
+                'total_piece' => $pr['total']+$pr['grace'] ?? null,
+                'grace_piece' => $pr['grace'] ?? null,
+                'bill_piece'  => $pr['total'],
+                'price'       => $pr['price'] ?? null,
+                'bill_amount' => $pr['bill_amt'] ?? null,
+                'total_amt' =>   $pr['bill_amt'] ?? null,
+                'c_by'        => Auth::guard('tenant')->user()->id ?? null,
+            ]);
+
+            // \Log::info('Creating e_inv: ', [' inv error'=>json_encode($e_inv->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)]);
+            //  \Log::info("Creating Stock Out:\n" ,['stock error'=> json_encode($stock_out->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)]);
+
+
+         
+
+            $stock_out->save();
         }
+
+        
           // ✅ Update Prime Load status ONLY AFTER invoice success
         Prime_load::where('id', $load_id)->update(['load_status' => 'inv_completed']);
         
@@ -508,10 +537,14 @@ class Stock_ser
                 return $item;
         });
 
+        $date = now()->toDateString();
+
         $petty_cash_given = $petty_list->where('type','petty')->sum('amount');
         $petty_cash_settle  = $petty_list->where('type','settle')->sum('amount');
 
-        $farmer_paid_list = Farmer_cash::with(['farm_data:id,farm_en,location'])->where('c_by', $emp_id);
+        $farmer_adv = Farmer::where('c_by', $emp_id)->pluck('adv_prime')->filter();
+
+        $farmer_paid_list = Farmer_cash::with(['farm_data:id,farm_en,location'])->whereNotIn('id', $farmer_adv)->where('c_by', $emp_id);
         
         if(isset($data['limit']) && is_int($data['limit'])){
             $farmer_paid_list = $farmer_paid_list->limit($data['limit']);
@@ -522,6 +555,21 @@ class Stock_ser
                 return $item;
         });
 
+        $farmer_today_cash_spent = Farmer_cash::where('c_by', $emp_id)
+            ->whereNotIn('id', $farmer_adv)
+            ->whereDate('created_at', today())
+            ->sum('amount');
+
+        $today_petty_given = Petty_cash::where('emp_id', $emp_id)
+            ->whereDate('created_at', today())
+            ->where('type', 'petty')
+            ->sum('amount');
+
+        $today_petty_settle = Petty_cash::where('emp_id', $emp_id)
+            ->whereDate('created_at', today())
+            ->where('type', 'settle')
+            ->sum('amount');
+
         // $overall_list = $petty_list->concat($farmer_paid_list)->sortByDesc(function ($item) {
         //         return Carbon::createFromFormat('d-m-Y H:i:s', $item->created_at);
         //     })->values();
@@ -529,13 +577,15 @@ class Stock_ser
         // \Log::info('petty cash given: '. $petty_cash_given);
         // \Log::info('petty cash settle: '. $petty_cash_settle);
         // \Log::info('farmer paid sum: '. $farmer_paid_list->sum('amount'));
+
+        // \Log::info('Balance Calculation: ('.$today_petty_given.' - '.$today_petty_settle.') - '.$farmer_today_cash_spent.')');
         
 
 
         $balance = ($petty_cash_given - $petty_cash_settle) - $farmer_paid_list->sum('amount');
 
 
-        return ['cash_given'=>$petty_cash_given,'cash_used'=>$farmer_paid_list->sum('amount'),'balance' => $balance, 'list' => $farmer_paid_list];
+        return ['cash_given'=>($today_petty_given - $today_petty_settle),'cash_used'=>$farmer_today_cash_spent,'balance' => $balance, 'list' => $farmer_paid_list];
    }
 
    // function to get petty cash individual view all

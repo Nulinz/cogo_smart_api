@@ -20,6 +20,7 @@ class Kyc extends Model
         'com_address',
         'com_gst',
         'com_pan',
+        'file',
         'status',
         'c_by',
     ];
