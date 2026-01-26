@@ -26,6 +26,7 @@ class Stock_out extends Model
         'quality',
         'total_amt',
         'status',
+        'clear_status',
         'c_by',
     ];
 

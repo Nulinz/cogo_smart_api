@@ -21,6 +21,7 @@ class Kyc extends Model
         'com_gst',
         'com_pan',
         'file',
+        'signature',
         'status',
         'c_by',
     ];

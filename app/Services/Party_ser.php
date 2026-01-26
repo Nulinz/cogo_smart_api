@@ -403,6 +403,7 @@ class Party_ser
         
         // $data->amount = 0;
         $data->balance = $bal;
+        
        return ['data' => $data,'party_cash' => $party_trans];
     }
 

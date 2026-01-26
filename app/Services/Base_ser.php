@@ -288,7 +288,8 @@ class Base_ser
            $farmer = $item->first()->farmer_data;
 
                 return [
-                    'emp_name'       => $farmer->farm_en ?? null,
+                    'farmer_id'       => $farmer->id ?? null,
+                    'farmer_name'       => $farmer->farm_en ?? null,
                     'location'       => $farmer->location ?? null,
                     // 'role'           => $farmer->role ?? null,
                     // 'farmer_count'   => $item->groupBy('farm_id')->count(),

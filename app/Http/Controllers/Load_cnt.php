@@ -217,7 +217,7 @@ class Load_cnt extends Controller
             'grace_per' => 'required|string',
             'bill_piece' => 'required|string',
             'price' => 'required|string',
-            'commission' => 'required|string',
+            'commission' => 'nullable|string',
             'bill_amount' => 'required|string',
             'adv' => 'nullable|string',
             'quality' => 'required|string',

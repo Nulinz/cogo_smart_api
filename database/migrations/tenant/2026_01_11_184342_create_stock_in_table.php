@@ -27,7 +27,8 @@ return new class extends Migration
             $table->integer('adv')->nullable();
             $table->integer('quality')->nullable();
             $table->decimal('total_amt', 15, 2)->nullable();
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->enum('status', ['active', 'inactive','clear'])->default('active');
+            $table->enum('clear_status', ['clear', 'not_clear'])->default('not_clear');
             $table->integer('c_by')->nullable();
             $table->timestamps();
         });

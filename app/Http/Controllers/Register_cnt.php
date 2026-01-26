@@ -132,7 +132,8 @@ class Register_cnt extends Controller
                 'otp_verified' => 'yes',
             ]);
 
-            $db_name = 'cogo_smart_'.Str::substr($master->name, 0, 4).'_'.$master->id;
+            // $db_name = 'cogo_smart_'.Str::substr($master->name, 0, 4).'_'.$master->id;
+            $db_name = 'cogo_smart_'.$master->id;
             $master->db_name = $db_name;
             $master->save();
 
@@ -862,6 +863,7 @@ class Register_cnt extends Controller
 
     public  function add_kyc(Request $request)
     {
+        \Log::info('Add KYC called',['request'=>$request->allFiles()]);
         $rule = [
             'f_name' => 'required|string',
             'phone' => 'required|string',
@@ -872,6 +874,7 @@ class Register_cnt extends Controller
             'com_gst' => 'required|string',
             'com_pan' => 'required|string',
             'file' => 'sometimes|file|mimes:jpg,jpeg,png',
+            'signature' => 'sometimes|file|mimes:jpg,jpeg,png',
         
         ];
 
@@ -891,11 +894,21 @@ class Register_cnt extends Controller
             if($request->hasFile('file')) {
                 $file = $request->file('file');
                 $filename = 'kyc_'.time().'.'.$file->getClientOriginalExtension();
-                $filePath = 'invoices/' . $fileName;
+                $filePath = 'invoices/' . $filename;
 
                 // $filePath = $file->storeAs('kyc_files', $filename, 'public');
             } else {
                 $filePath = null;
+            }
+
+            if($request->hasFile('signature')) {
+                $signature = $request->file('signature');
+                $sig_filename = 'signature_'.time().'.'.$signature->getClientOriginalExtension();
+                $signaturePath = 'signatures/' . $sig_filename;
+
+                // $signaturePath = $signature->storeAs('kyc_signatures', $sig_filename, 'public');
+            } else {
+                $signaturePath = null;
             }
 
              
@@ -912,6 +925,7 @@ class Register_cnt extends Controller
                     'com_gst' => $request->com_gst,
                     'com_pan' => $request->com_pan,
                     'file' => $filePath,
+                    'signature' => $signaturePath,
                     'c_by' => Auth::guard('tenant')->user()->id,
                     'created_at' => now(),
                     'updated_at' => now(),

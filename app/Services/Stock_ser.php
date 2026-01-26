@@ -14,8 +14,12 @@ use App\Models\Filter;
 use App\Models\Petty_cash;
 use App\Models\Farmer_cash;
 use App\Models\Farmer;
+use App\Models\Clear_stock;
+use App\Services\Party_ser;
+use App\Models\Kyc;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class Stock_ser
@@ -23,8 +27,8 @@ class Stock_ser
     public static function stock_home()
     {
 
-        $stock_in  = Stock_in::with('product_data:id,name_en')->get();
-        $stock_out = Stock_out::get();
+        $stock_in  = Stock_in::with('product_data:id,name_en')->where('clear_status', 'not_clear')->get();
+        $stock_out = Stock_out::where('clear_status', 'not_clear')->get();
 
         $stockOutByProduct = $stock_out->groupBy('product_id');
 
@@ -75,7 +79,15 @@ class Stock_ser
                     ->take(5)
                     ->values();
 
-        return ['total_card' => $total_value,'products' => $products,'transactions' => $latest_transactions  ];
+           
+
+            $stock_data = Clear_stock::all();
+
+            $stock_sum_clear = $stock_data->sum(function($item){
+                return ($item->bill_piece + $item->grace_piece);
+            });
+
+        return ['total_card' => $total_value,'products' => $products,'transactions' => $latest_transactions,'clear_stock_count' => $stock_sum_clear];  
 
     }
 
@@ -119,6 +131,10 @@ class Stock_ser
                                         : $item->product->name_en ?? null,
 
                     'total_piece'   => $item->total_piece ?? 0,
+
+                    'bill_piece'    => $item->bill_piece ?? 0,
+
+                    'grace_piece'  => $item->grace_piece ?? 0,
 
                     'party_name'    => $item->table === 'out'
                                         ? $item->party->party_en ?? null
@@ -219,11 +235,22 @@ class Stock_ser
 
           if($data['type']=='completed'){
 
-                $grace_piece = round($data['grace_new'] * $summary->filter_total);
+                $grace_piece = round(($data['grace_new']/100) * $summary->filter_total);
 
                 $load_status_update = Prime_load::where('id', $summary->load_id)->first();
                 $load_status_update->load_status = 'sum_completed';
                 $load_status_update->save();
+
+                // \Log::info('Creating Stock In for Filter Summary Completion: ', [
+                //     'load_id' => $summary->load_id,
+                //     'product_id' => $summary->product_id,
+                //     'total_piece' => $summary->filter_total,
+                //     'grace_piece' => $grace_piece,
+                //     'grace_per'   => $data['grace_new'],
+                //     'bill_piece'  => $summary->filter_total - $grace_piece,
+                //     'price'       => $summary->filter_price,
+                //     'bill_amount' => $summary->filter_amount,
+                // ]);
 
 
 
@@ -305,11 +332,23 @@ class Stock_ser
 
             if($data['type']=='completed'){
 
-                $grace_piece = round($data['grace_new'] * $summary->filter_total);
+                $grace_piece = round(($data['grace_new'] / 100) * $summary->filter_total);
 
                 $load_status_update = Prime_load::where('id', $summary->load_id)->first();
                 $load_status_update->load_status = 'sum_completed';
                 $load_status_update->save();
+
+                // \Log::info('Creating Stock In for Filter Summary Completion: ', [
+                //     'grace_new' => $data['grace_new'],
+                //     'load_id' => $summary->load_id,
+                //     'product_id' => $summary->product_id,
+                //     'total_piece' => $summary->filter_total,
+                //     'grace_piece' => $grace_piece,
+                //     'grace_per'   => $data['grace_new'],
+                //     'bill_piece'  => $summary->filter_total - $grace_piece,
+                //     'price'       => $summary->filter_price,
+                //     'bill_amount' => $summary->filter_amount,
+                // ]);
 
 
 
@@ -561,12 +600,15 @@ class Stock_ser
             ->sum('amount');
 
         $today_petty_given = Petty_cash::where('emp_id', $emp_id)
-            ->whereDate('created_at', today())
-            ->where('type', 'petty')
+            ->whereDate('date', today())
+            ->where('type','petty')
             ->sum('amount');
 
+            // \Log::info('Today petty given: '. $today_petty_given);
+            // \Log::info('Today employee: '. $emp_id);
+
         $today_petty_settle = Petty_cash::where('emp_id', $emp_id)
-            ->whereDate('created_at', today())
+            ->whereDate('date', today())
             ->where('type', 'settle')
             ->sum('amount');
 
@@ -585,7 +627,7 @@ class Stock_ser
         $balance = ($petty_cash_given - $petty_cash_settle) - $farmer_paid_list->sum('amount');
 
 
-        return ['cash_given'=>($today_petty_given - $today_petty_settle),'cash_used'=>$farmer_today_cash_spent,'balance' => $balance, 'list' => $farmer_paid_list];
+        return ['cash_given'=>($today_petty_given),'cash_used'=>$farmer_today_cash_spent,'balance' => $balance, 'list' => $farmer_paid_list];
    }
 
    // function to get petty cash individual view all
@@ -644,13 +686,26 @@ class Stock_ser
 
         $invoice = M_invoice::where('load_id', $load_id)->exists() ? M_invoice::where('load_id', $load_id)->with(['invoice_items','load_data','invoice_items.product_data:id,name_en'])->orderby('id','desc')->first() : null;
 
+        // $inv_load_charge = collect($invoice->charges ?? []);
+
+       $invoice->inv_loading_charge += collect($invoice->charges ?? [])->sum('amt');
+
+
         $invoice->exists_check = M_invoice::where('load_id', $load_id)->exists() ? true : false;
 
         if(!$invoice){
             throw new \Exception('Invoice not found');
         }
 
-        return $invoice;
+        $prime_load = Prime_load::with(['party_data:id,party_en,party_location,com_name,com_add'])->where('id', $load_id)->first();
+
+        $party_bal = Party_ser::party_profile(['party_id' => $prime_load->party_id]);
+
+        $prime_load->party_balance = $party_bal['data']['balance'] ?? 0;
+
+        $trader_kyc = Kyc::where('user_id', Auth('tenant')->user()->id ?? null)->first();
+
+        return ['invoice' => $invoice, 'prime_load' => $prime_load,'trader_kyc' => $trader_kyc];
    }
 
    // function to generate invoice pdf
@@ -684,6 +739,47 @@ class Stock_ser
         // }
 
         // return $invoice;
+   }
+
+   // function to clear stock
+
+   public static function clear_stock(array $data)
+   {
+        // Delete all stock in and stock out records
+
+        // \Log::info('Clearing stock for product ID: ',['data' => $data]);
+
+        $product_id = (int)($data['product_id'] ?? null);
+        
+        try{
+            DB::beginTransaction();
+                $stock_in_update = Stock_in::where('product_id', $product_id)->where('clear_status', '=', 'not_clear')->update(['clear_status' => 'clear']);
+                $stock_out_update = Stock_out::where('product_id', $product_id)->where('clear_status', '=', 'not_clear')->update(['clear_status' => 'clear']);
+
+                if($stock_in_update === 0 && $stock_out_update === 0){
+                    throw new \Exception('No active stock records found for the specified product');
+                }
+
+
+                $stock_clear = clear_stock::create([
+                    'product_id' => $data['product_id'] ?? null,
+                    'bill_piece' => $data['bill_piece'] ?? null,
+                    'grace_piece' => $data['grace_piece'] ?? null,
+                    'avg_price'  => $data['avg_price'] ?? null,
+                    'total_amt'  => $data['total_amt'] ?? null,
+                    'status'     => 'active',
+                    'c_by'       => Auth::guard('tenant')->user()->id ?? null,
+                ]);
+
+                DB::commit();
+
+                return ['message' => 'Stock cleared successfully'];
+
+        }catch (\Exception $e) {
+                DB::rollBack();
+                return ['error' => 'Failed to clear stock: ' . $e->getMessage()];
+        }
+            
    }
     
 }

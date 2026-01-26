@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Services\Load_ser;
 use App\Services\Stock_ser;
+use App\Models\Clear_stock;
 use Illuminate\Support\Facades\Log;
 
 class Stock_cnt extends Controller
@@ -482,5 +483,70 @@ class Stock_cnt extends Controller
         }
        
         return response()->json(['success' => true, 'data' => $result], 200);
+    }
+
+    // function for clear stock
+
+    public function clear_stock(Request $request)
+    {
+
+    $rules = [
+            'product_id' => 'nullable|string',
+            'bill_piece'=>'nullable|string',
+            'grace_piece'=>'nullable|string',
+            'avg_price'=>'nullable|string',
+            'total_amount'=>'nullable|string',
+        ];  
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        
+        try{
+            $result = Stock_ser::clear_stock($validator->validated());
+
+        }catch(\Exception $e){
+
+            Log::error('Error in clear_stock: '.$e->getMessage());
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request.'], 500);
+        }
+       
+        return response()->json(['success' => true, 'data' => $result], 200);
+    }
+
+    // function for clear stock list
+
+    public function clear_stock_list(Request $request)
+    {
+        
+        try{
+            $stock_data = Clear_stock::with('product_data')
+                    ->get()
+                    ->groupBy('product_id')
+                    ->map(function ($group) {
+
+                        $first = $group->first();
+
+                        return [
+                            'product_id'   => $first->product_id,
+                            'product_name' => $first->product_data->name_en ?? null,
+                            'bill_piece'   => $group->sum('bill_piece'),
+                            'grace_piece'  => $group->sum('grace_piece'),
+                        ];
+                    })
+                    ->values();
+
+        }catch(\Exception $e){
+
+            Log::error('Error in clear_stock_list: '.$e->getMessage());
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request.'], 500);
+        }
+       
+        return response()->json(['success' => true, 'data' => $stock_data], 200);
     }
 }

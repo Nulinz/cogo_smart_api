@@ -127,6 +127,12 @@ Route::middleware(['tenant.db','jwt.auth'])->group(function () {
     Route::post('/stock_home', [Stock_cnt::class, 'stock_home']);
     Route::post('/stock_transaction_list', [Stock_cnt::class, 'stock_transaction_list']);
     Route::post('/get_stock_product', [Stock_cnt::class, 'get_stock_product']);
+    
+    // stock clear
+
+    Route::post('/clear_stock', [Stock_cnt::class, 'clear_stock']);
+    Route::post('/clear_stock_list', [Stock_cnt::class, 'clear_stock_list']);
+
     // create the filter data
 
     Route::post('/add_filter', [Load_cnt::class, 'add_filter']);

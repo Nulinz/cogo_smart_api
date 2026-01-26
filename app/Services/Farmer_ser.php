@@ -85,7 +85,11 @@ class Farmer_ser
 
     public static function get_farmer_details($farm_id)
     {
-        return Farmer::findOrFail($farm_id);
+        $farm =  Farmer::findOrFail($farm_id);
+
+        $farm->advance = Farmer_cash::where('id', $farm->adv_prime)->value('amount');   
+
+        return $farm;
     }
 
     public static function get_all_farmers()
