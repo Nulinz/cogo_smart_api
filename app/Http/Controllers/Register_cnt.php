@@ -873,8 +873,8 @@ class Register_cnt extends Controller
             'com_address' => 'required|string',
             'com_gst' => 'required|string',
             'com_pan' => 'required|string',
-            'file' => 'sometimes|file|mimes:jpg,jpeg,png',
-            'signature' => 'sometimes|file|mimes:jpg,jpeg,png',
+            'file' => 'nullable|file|mimes:jpg,jpeg,png',
+            'signature' => 'nullable|file|mimes:jpg,jpeg,png',
         
         ];
 
@@ -892,21 +892,28 @@ class Register_cnt extends Controller
             $user = Auth::guard('tenant')->user(); // ✅ Works now
 
             if($request->hasFile('file')) {
+                \Log::info('File upload detected');
                 $file = $request->file('file');
                 $filename = 'kyc_'.time().'.'.$file->getClientOriginalExtension();
-                $filePath = 'invoices/' . $filename;
+                // $filePath = 'invoices/' . $filename;
 
-                // $filePath = $file->storeAs('kyc_files', $filename, 'public');
+                  $destinationPath = public_path('invoices');
+                $file->move($destinationPath, $filename);
+
+                $filePath = 'invoices/' . $filename;
             } else {
                 $filePath = null;
             }
 
             if($request->hasFile('signature')) {
+                \Log::info('Signature upload detected');
                 $signature = $request->file('signature');
                 $sig_filename = 'signature_'.time().'.'.$signature->getClientOriginalExtension();
-                $signaturePath = 'signatures/' . $sig_filename;
+                // $signaturePath = 'invoices/' . $sig_filename;
+                 $destinationPath = public_path('invoices');
+                $signature->move($destinationPath, $sig_filename);
 
-                // $signaturePath = $signature->storeAs('kyc_signatures', $sig_filename, 'public');
+                $signaturePath = 'invoices/' . $sig_filename;
             } else {
                 $signaturePath = null;
             }
@@ -956,6 +963,10 @@ class Register_cnt extends Controller
             $user = Auth::guard('tenant')->user(); // ✅ Works now
 
             $kyc = Kyc::where('user_id', $user->id)->first();
+
+            $kyc->file_url = $kyc->file ? url($kyc->file) : null;
+            $kyc->signature_url = $kyc->signature ? url($kyc->signature) : null;
+            
 
             return response()->json([
                 'success' => true,

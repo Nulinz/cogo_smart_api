@@ -712,6 +712,7 @@ class Stock_ser
 
    public static function invoice_pdf(array $data)
    {
+       $load_id = $data['load_id'];
 
         if(($data['type']==='invoice')){
             
@@ -725,7 +726,20 @@ class Stock_ser
             $inv_data = Shift::with(['product_data:id,name_en'])->where('id', $data['load_id'])->get();
         }
 
-        return $inv_data;
+          $prime_load = Prime_load::with(['party_data:id,party_en,party_location,com_name,com_add'])->where('id', $load_id)->first();
+
+        $party_bal = Party_ser::party_profile(['party_id' => $prime_load->party_id]);
+
+        $prime_load->party_balance = $party_bal['data']['balance'] ?? 0;
+
+        $trader_kyc = Kyc::where('user_id', Auth('tenant')->user()->id ?? null)->first();
+
+        $trader_kyc->file_url = $trader_kyc->file ? asset($trader_kyc->file) : null;
+        $trader_kyc->signature_url = $trader_kyc->signature ? asset($trader_kyc->signature) : null;
+
+         return ['invoice' => $inv_data, 'prime_load' => $prime_load,'trader_kyc' => $trader_kyc];
+
+        // return $inv_data;
 
 
 
