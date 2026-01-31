@@ -210,7 +210,7 @@ class Stock_ser
 
         // calculate summary
 
-        $summmary = Summary::create([
+        $summary = Summary::create([
             'load_id'         => $load_id,
             'filter_total'     => $data['filter_total'] ?? null,
             'filter_billing'   => $data['filter_billing'] ?? null,
