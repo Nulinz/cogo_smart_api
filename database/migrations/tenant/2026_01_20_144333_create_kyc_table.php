@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('com_gst')->nullable();
             $table->string('com_pan')->nullable();
             $table->text('file')->nullable();
+            $table->text('signature')->nullable();
             $table->enum('status', ['active','inactive'])->default('active');
             $table->integer('c_by')->nullable();
             $table->timestamps();

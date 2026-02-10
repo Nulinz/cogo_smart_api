@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete My Account</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
+        rel="stylesheet">
+
+    <!-- jQuery UI -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+</head>
+<style>
+    body {
+        font-family: "Open Sans", sans-serif;
+        background-color: #FFF;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    @media screen and (min-width:1200px) {
+        .main {
+            width: 50%;
+            background-color: #fff;
+            display: block;
+            /* border: 1px solid #000; */
+            box-shadow: 2px 2px 10px 1px #888;
+            border-radius: 8px;
+            margin: 80px auto;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        #h2 {
+            background-color: #fff;
+            color: #f8e528;
+            border: 2px solid #f8e528;
+            width: 99.7%;
+            padding: 10px 0px;
+            display: grid;
+            grid-template-columns: 70% 28%;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px 8px 0px 0px;
+        }
+
+        #h2 h4 {
+            margin: 0;
+            padding: 0 5px;
+        }
+
+        #h2 .img {
+            display: flex;
+            justify-content: start;
+            align-items: center;
+        }
+
+        #h2 img {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: auto;
+        }
+
+        #h2 .img h6 {
+            margin: 0px;
+        }
+
+        h4 {
+            font-size: 25px;
+            margin-top: 0px;
+            text-align: left;
+        }
+
+        h5 {
+            margin-top: 0px;
+            font-size: 20px;
+        }
+
+        p,
+        li {
+            font-size: 14px;
+        }
+
+        label {
+            font-style: 14px;
+            font-weight: 700;
+        }
+
+        p {
+            margin-top: -30px;
+        }
+
+        input {
+            font-size: 15px;
+            padding: 10px;
+            width: 250px;
+            background-color: #e9e9e9;
+            border-radius: 3px;
+            border: 1px solid #e9e9e9;
+            outline: none;
+            margin-top: 5px;
+        }
+
+        ul {
+            margin-top: -30px;
+        }
+
+        .button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .button button {
+            background-color: #D2122E;
+            padding: 10px 40px;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 15px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .input {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        /* modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        /* Modal Content/Box */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        /* The Close Button */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    }
+
+    @media screen and (min-width:768px) and (max-width:1200px) {
+        .main {
+            width: 80%;
+            background-color: #fff;
+            display: block;
+            /* border: 1px solid #000; */
+            box-shadow: 2px 2px 10px 1px #888;
+            margin: 100px auto;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        #h2 {
+            background-color: #fff;
+            color: #f8e528;
+            border: 2px solid #f8e528;
+            width: 99.7%;
+            padding: 10px 0px;
+            display: grid;
+            grid-template-columns: 70% 30%;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #h2 h4 {
+            margin: 0;
+            padding: 0 5px;
+            font-size: 25px;
+            margin-top: 0px;
+        }
+
+        #h2 .img {
+            display: flex;
+            justify-content: start;
+            align-items: center;
+        }
+
+        #h2 img {
+            display: flex;
+            justify-content: start;
+            align-items: center;
+            margin: auto;
+            height: 35px;
+        }
+
+        h5 {
+            margin-top: 0px;
+            font-size: 20px;
+        }
+
+        p,
+        li {
+            font-size: 14px;
+        }
+
+        label {
+            font-style: 14px;
+            font-weight: 700;
+        }
+
+        p {
+            margin-top: -30px;
+        }
+
+        input {
+            font-size: 15px;
+            padding: 10px;
+            width: 250px;
+            background-color: #e9e9e9;
+            border-radius: 3px;
+            border: 1px solid #e9e9e9;
+            outline: none;
+            margin-top: 5px;
+        }
+
+        ul {
+            margin-top: -30px;
+        }
+
+        .button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .button button {
+            background-color: #D2122E;
+            padding: 10px 40px;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 15px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .input {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        /* modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        /* Modal Content/Box */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        /* The Close Button */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    }
+
+    @media screen and (min-width:320px) and (max-width:768px) {
+        .main {
+            width: 100%;
+            background-color: #fff;
+            display: block;
+            /* border: 1px solid #000; */
+            box-shadow: 2px 2px 10px 1px #888;
+            margin: 0px auto;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+
+        #h2 {
+            background-color: #fff;
+            color: #f8e528;
+            border: 2px solid #f8e528;
+            width: 99.7%;
+            padding: 10px 0px;
+            display: grid;
+            grid-template-columns: 50% 50%;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #h2 .img {
+            display: flex;
+            justify-content: start;
+            align-items: center;
+        }
+
+        #h2 img {
+            display: flex;
+            justify-content: start;
+            align-items: center;
+            margin: auto;
+            height: 35px;
+        }
+
+        #h2 h4 {
+            margin: 0;
+            padding: 0 5px;
+            font-size: 18px;
+            margin-top: 0px;
+        }
+
+        h5 {
+            margin-top: 0px;
+            font-size: 20px;
+        }
+
+        p,
+        li {
+            font-size: 14px;
+        }
+
+        label {
+            font-style: 14px;
+            font-weight: 700;
+        }
+
+        p {
+            margin-top: -30px;
+        }
+
+        input {
+            font-size: 15px;
+            padding: 10px;
+            width: 250px;
+            background-color: #e9e9e9;
+            border-radius: 3px;
+            border: 1px solid #e9e9e9;
+            outline: none;
+            margin-top: 5px;
+        }
+
+        ul {
+            margin-top: -30px;
+        }
+
+        .button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .button button {
+            background-color: #D2122E;
+            padding: 10px 40px;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 15px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .input {
+            display: grid;
+            justify-content: center;
+            grid-template-columns: repeat(2, fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        /* modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        /* Modal Content/Box */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        /* The Close Button */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    }
+    
+</style>
+
+<body>
+    <div class="main">
+        <div id="h2">
+            <div>
+                <h4>Delete My Account</h4>
+            </div>
+            <div class="img">
+                <img src="./Onstru_logo.png" height="25px" alt="">
+            </div>
+        </div>
+        <div class="content">
+            <h5>We're sorry to see you here! </h5>
+            <p>If you wish to delete your account, please follow the instructions below. Please note that deleting your
+                account will permanently remove all your data associated with it, including your profile information,
+                preferences, and any content you've created. This action cannot be undone.</p>
+            <form action="">
+                <div class="input">
+                    <div>
+                        <label for="">Phone Number</label><br>
+                        <input type="text" min="0" maxlength="10" placeholder="Phone Number" name="" id="phoneNumber"
+                            required>
+                    </div>
+                    <div>
+                        <label for="">Password</label><br>
+                        <input type="password" placeholder="Password" id="password" required>
+                    </div>
+                </div><br>
+                <div class="button">
+                    <button type="button" id="deleteAccountBtn">Delete My Account</button>
+                </div><br>
+            </form>
+            <h5>Important Notes</h5>
+            <ul>
+                <li>Deleting your account is irreversible. Make sure you have backed up any important data or
+                    information
+                    before proceeding.</li>
+                <li>Some information may be retained for legal or regulatory purposes even after your account is
+                    deleted.
+                </li>
+                <li>If you've subscribed to any services or have ongoing transactions, make sure to cancel them before
+                    deleting your account to avoid any unexpected charges.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+</body>
+<script>
+    $(document).ready(function () {
+        $("#deleteAccountBtn").click(function () {
+            var phoneNumber = $("#phoneNumber").val();
+            var password = $("#password").val();
+            if (phoneNumber.length === 10 && password) {
+                Swal.fire({
+                    title: "Success",
+                    text: "If the provided credentials are validated against our database, your account deletion request will be processed within the next 24 hours.",
+                    icon: "success",
+                });
+            } else {
+                Swal.fire({
+                    title: "Error",
+                    text: "Please fill in all the required fields",
+                    icon: "error",
+                });
+            }
+        });
+    });
+</script>
+
+</html>

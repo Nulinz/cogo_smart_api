@@ -189,7 +189,7 @@ class Farmer_ser
     //   \Log::info('get balance: ' . $get_bal);
 
 
-        $load = Load::with(['load_data:id,load_seq'])->where('farmer_id', $farm_id)->get()->map(function($item){
+        $load = Load::with(['load_data:id,load_seq','product_data:id,name_en'])->where('farmer_id', $farm_id)->get()->map(function($item){
            $item->table = 'e_load';
            $adv = $item->adv ?? 0;
            $item->farmer_pend = ($item->total_amt - $adv);
@@ -198,7 +198,7 @@ class Farmer_ser
 
         // dd($load->toArray());
 
-        $stock_in = Stock_in::where('cat','purchase')->where('farm_id', $farm_id)->get()->map(function($item){
+        $stock_in = Stock_in::with(['product_data:id,name_en'])->where('cat','purchase')->where('farm_id', $farm_id)->get()->map(function($item){
            $item->table = 'stock_in';
             $adv = $item->adv ?? 0;
            $item->farmer_pend = ($item->total_amt - $adv);

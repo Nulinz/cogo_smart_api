@@ -89,7 +89,7 @@ return [
     |
     */
 
-    'ttl' => (int) env('JWT_TTL', 5), // 1 day  for normal api token expire time
+    'ttl' => (int) env('JWT_TTL', 1440), // 1 day  for normal api token expire time
 
     /*
     |--------------------------------------------------------------------------

@@ -215,9 +215,16 @@ class Party_ser
                         ->select('id', 'charges')
                         ->get();
 
+                //    $inv_amount = 0;
+
                     foreach ($inv_prime as $inv) {
                         $charge_out = $inv->charges ?? [];
-                        $inv_amount += array_sum($charge_out);
+
+                        if (is_array($charge_out)) {
+                            $inv_amount += array_sum(
+                                array_map('floatval', array_column($charge_out, 'amt'))
+                            );
+                        }
                     }
 
                     $shift_others = Shift::where('cat', 'others')
@@ -319,9 +326,16 @@ class Party_ser
 
                 $charge_out = $prime_inv->charges ?? [];
 
-                // \Log::info('Charge Out for Load ID '.$item->load_id.': ', $charge_out);
+                //   \Log::info('Charge Out for Load ID '.$prime_inv->id.': ', $charge_out);
+                //   \Log::info('total_amt'.$item->total_amt);
 
-                $item->total_amt += array_sum($charge_out);
+                $item->total_amt += array_sum(array_column($charge_out, 'amt'));
+                // $item->total_amt += array_sum($charge_out);
+
+                // $arry_sum = array_sum($charge_out);
+
+                // \Log::info('total_amt'.$item->total_amt);
+                // \Log::info('total_amt'.$arry_sum);
 
                             // $item->total_amt = $item->total_amt + ($charge_out['total_charge'] ?? 0);
                     return $item;

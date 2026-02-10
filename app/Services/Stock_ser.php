@@ -270,7 +270,7 @@ class Stock_ser
 
       
      
-        return $summmary;
+        return $summary;
 
    }
    
@@ -416,7 +416,7 @@ class Stock_ser
         $total_commision = ($query->sum('commission'));
 
 
-        $shift_data = Shift::where('load_id', $load_id)->get();
+        $shift_data = Shift::with(['to_load:id,load_seq','party_data:id,party_en,party_location'])->where('load_id', $load_id)->get();
 
 
         $prime_load = Prime_load::with(['truck_capacity:id,capacity,charge'])->where('id', $load_id)->first();
@@ -450,6 +450,7 @@ class Stock_ser
    public static function add_invoice(array $data)
    {
     \Log::info('Adding Invoice Data: ', $data);
+    \Log::info('file data: ', ['file' => isset($data['file']) ? $data['file']->getClientOriginalName() : 'No file']);
         $load_id = $data['load_id'];
 
         $load = Load::where('id', $load_id)->first();
@@ -717,7 +718,7 @@ class Stock_ser
         if(($data['type']==='invoice')){
             
         //    $inv_data = Self::get_invoice($data);
-          $inv_data =  M_invoice::where('id', $data['load_id'])->with(['invoice_items','load_data','invoice_items.product_data:id,name_en','load_data.party_data:id,party_en,party_location'])->get();
+          $inv_data =  M_invoice::where('load_id', $data['load_id'])->with(['invoice_items','load_data','invoice_items.product_data:id,name_en','load_data.party_data:id,party_en,party_location'])->get();
 
         }else if(($data['type']=='sales')){
             // get e invoice data
@@ -732,10 +733,18 @@ class Stock_ser
 
         $prime_load->party_balance = $party_bal['data']['balance'] ?? 0;
 
-        $trader_kyc = Kyc::where('user_id', Auth('tenant')->user()->id ?? null)->first();
+        $trader_kyc = Kyc::where('user_id', Auth('tenant')->user()->id)->first();
 
-        $trader_kyc->file_url = $trader_kyc->file ? asset($trader_kyc->file) : null;
-        $trader_kyc->signature_url = $trader_kyc->signature ? asset($trader_kyc->signature) : null;
+        // $trader_kyc->file_url = $trader_kyc->file ? asset($trader_kyc->file) : null;
+        // $trader_kyc->signature_url = $trader_kyc->signature ? asset($trader_kyc->signature) : null;
+
+        
+        if ($trader_kyc) {
+            $trader_kyc->file_url = $trader_kyc->file ? asset($trader_kyc->file) : null;
+            $trader_kyc->signature_url = $trader_kyc->signature ? asset($trader_kyc->signature) : null;
+        } else {
+            $trader_kyc = null; // or return empty response
+        }
 
          return ['invoice' => $inv_data, 'prime_load' => $prime_load,'trader_kyc' => $trader_kyc];
 

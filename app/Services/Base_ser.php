@@ -366,6 +366,7 @@ class Base_ser
                 'pending_qty' =>$item->remain,
                 'last_farmer' =>$item->last_farmer,
                 'product_id' => $item->product_id,
+                'market_place' => $item->market,
             ];
 
             
