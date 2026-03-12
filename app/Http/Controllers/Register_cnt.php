@@ -155,7 +155,7 @@ class Register_cnt extends Controller
 
                 ]);
 
-                $product = ['Grade A','katki','Bombay katki'];
+                $product = ['Tender Coconut','katki','Bombay katki'];
 
                 foreach($product as $prod){
 
@@ -168,6 +168,60 @@ class Register_cnt extends Controller
                         'updated_at' => now(),
                     ]);
                 }
+
+                $quality = ['Size Mixing','Mixing','Top Size Mixing','Size'];
+
+                 foreach($quality as $qual){
+
+                    DB::connection('tenant')->table('quality')->insert([
+                        'quality' => $qual,
+                        'status' => 'active',
+                        'c_by' => 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                $loss_cartegory = ['Shortage','Quality Issue','Discount'];
+
+                 foreach($loss_category as $loss){
+
+                    DB::connection('tenant')->table('loss_category')->insert([
+                        'loss' => $loss,
+                        'status' => 'active',
+                        'c_by' => 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                $truck_capacity = ['25 Ton','30 Ton','12 Ton'];
+
+                 foreach($truck_capacity as $truck){
+
+                    DB::connection('tenant')->table('truck_cap')->insert([
+                        'capacity' => $truck,
+                        'charge' => 0,
+                        'status' => 'active',
+                        'c_by' => 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                $exp_cat = ['Loading','Food','Travel','Other Expenses'];
+
+                 foreach($exp_cat as $exp){
+
+                    DB::connection('tenant')->table('exp_cat')->insert([
+                        'cat' => $exp,
+                        'status' => 'active',
+                        'c_by' => 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
 
                 DB::connection('tenant')->table('m_sequence')->insert([
                     'load_pref' => 'LOAD',

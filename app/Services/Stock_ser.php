@@ -46,17 +46,106 @@ class Stock_ser
 
                     $out_billing = $out_items->sum('bill_piece');
                     $out_grace   = $out_items->sum('grace_piece');
+
+                    // total amt of the bill
+                    $in_amt = $items->sum('total_amt');
+                    $out_amt = $out_items->sum('total_amt');
                    
 
                     // Remaining
                     $remaining_billing = $in_billing - $out_billing;
                     $remaining_grace   = $in_grace - $out_grace;
+                    $remain_amt = $in_amt - $out_amt;
+
+                    $avg_price = $remain_amt/$remaining_billing;
+
+                   
+
+                    // // Remaining
+                    // $remaining_billing = $in_billing - $out_billing;
+                    // $remaining_grace   = $in_grace - $out_grace;
+
+                    // // Weighted avg price (based on IN only)
+                    // // ✅ Correct average price
+                    // $avg_price = $in_billing > 0
+                    //     ? $items->sum(fn ($i) => $i->total_piece * $i->price) / $in_billing
+                    //     : 0;
+
+                    return [
+                        'product_id'        => $productId,
+                        'product_name'      => $items->first()->product_data->name_en ?? null,
+                        'billing_piece'     => $remaining_billing,
+                        'grace_piece'       => $remaining_grace,
+                        'avg_price'         => round($avg_price, 2),
+                        'product_amount'      => round(($remaining_billing) * $avg_price),
+                    ];
+                })->values();
+
+                $total_value = $products->sum('product_amount');
+
+                 // ✅ CALL TRANSACTION LIST HERE
+                $transactions = self::stock_transaction_list([]);
+
+                // take only latest 5 transactions
+                $latest_transactions = collect($transactions['stock_data'])
+                    // ->sortByDesc('created_at')
+                    ->take(5)
+                    ->values();
+
+           
+
+            $stock_data = Clear_stock::all();
+
+            $stock_sum_clear = $stock_data->sum(function($item){
+                return ($item->bill_piece + $item->grace_piece);
+            });
+
+        return ['total_card' => $total_value,'products' => $products,'transactions' => $latest_transactions,'clear_stock_count' => $stock_sum_clear];  
+
+    }
+
+    public static function stock_home_check()
+    {
+
+        $stock_in  = Stock_in::with('product_data:id,name_en')->where('clear_status', 'not_clear')->get();
+        $stock_out = Stock_out::where('clear_status', 'not_clear')->get();
+
+        $stockOutByProduct = $stock_out->groupBy('product_id');
+
+        $products = $stock_in
+                    ->groupBy('product_id')
+                    ->map(function ($items, $productId) use ($stockOutByProduct) {
+
+                    // Stock IN totals
+                    $in_billing = $items->sum('bill_piece');
+                    $in_grace   = $items->sum('grace_piece');
+                  
+
+                    // Stock OUT totals (safe)
+                    $out_items = $stockOutByProduct->get($productId, collect());
+
+                    $out_billing = $out_items->sum('bill_piece');
+                    $out_grace   = $out_items->sum('grace_piece');
+
+                    // total amt of the bill
+                    $in_amt = $items->sum('total_amt');
+                    $out_amt = $out_items->sum('total_amt');
+                   
+
+                    // Remaining
+                    $remaining_billing = $in_billing - $out_billing;
+                    $remaining_grace   = $in_grace - $out_grace;
+                    $remain_amt = $in_amt - $out_amt;
+
+                    $avg_price = $remain_amt/$remaining_billing;
+
+
 
                     // Weighted avg price (based on IN only)
                     // ✅ Correct average price
-                    $avg_price = $in_billing > 0
-                        ? $items->sum(fn ($i) => $i->total_piece * $i->price) / $in_billing
-                        : 0;
+                    // $avg_price = $in_billing > 0
+                    //     ? $items->sum(fn ($i) => $i->total_piece * $i->price) / $in_billing
+                    //     : 0;
 
                     return [
                         'product_id'        => $productId,
@@ -584,7 +673,7 @@ class Stock_ser
 
         $farmer_adv = Farmer::where('c_by', $emp_id)->pluck('adv_prime')->filter();
 
-        $farmer_paid_list = Farmer_cash::with(['farm_data:id,farm_en,location'])->whereNotIn('id', $farmer_adv)->where('c_by', $emp_id);
+        $farmer_paid_list = Farmer_cash::with(['farm_data:id,farm_en,location'])->where('type','!=','advance_deduct')->whereNotIn('id', $farmer_adv)->where('c_by', $emp_id);
         
         if(isset($data['limit']) && is_int($data['limit'])){
             $farmer_paid_list = $farmer_paid_list->limit($data['limit']);
