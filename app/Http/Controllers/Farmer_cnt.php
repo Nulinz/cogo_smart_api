@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Farmer;
 use App\Services\Farmer_ser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -34,7 +35,7 @@ class Farmer_cnt extends Controller
         ];
 
         $validator = Validator::make($request->all(), $rule);
-        
+
         //  \Log::info('Create farm request data: ', $request->all());
 
         if ($validator->fails()) {
@@ -65,7 +66,7 @@ class Farmer_cnt extends Controller
         }
     }
 
-    /// fucntion form individual farmer details
+    // / fucntion form individual farmer details
 
     public function get_farmer_details(Request $request)
     {
@@ -142,6 +143,7 @@ class Farmer_cnt extends Controller
 
         } catch (\Exception $e) {
             \Log::error('Error fetching farmer profile: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch farmer profile: '.$e->getMessage(),
@@ -217,7 +219,7 @@ class Farmer_cnt extends Controller
         }
     }
 
-    // function for farmer pay in   
+    // function for farmer pay in
 
     public function farmer_pay_in(Request $request)
     {
@@ -286,6 +288,68 @@ class Farmer_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to edit farmer payment: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for farmer inactive
+
+    public function farmer_inactive(Request $request)
+    {
+
+        try {
+            $farmer = Farmer_ser::farmer_inactive();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Farmer inactive List fetched successfully',
+                'data' => $farmer,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch inactive farmer list: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for farmer status update
+
+    public function farmer_status_update(Request $request)
+    {
+        $rule = [
+            'farm_id' => 'required|string',
+            'status' => 'required|string|in:active,inactive',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $farmer = Farmer::find($request->farm_id);
+
+            if ($farmer) {
+                $farmer->status = $request->status;
+                $farmer->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Farmer status updated successfully',
+                'data' => $farmer,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update farmer status: '.$e->getMessage(),
             ], 500);
         }
     }

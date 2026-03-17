@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Party;
 use App\Services\Party_ser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -108,7 +109,69 @@ class Party_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch party list: '.$e->getMessage(),
-                'line'=>$e->getLine(),
+                'line' => $e->getLine(),
+            ], 500);
+        }
+    }
+
+    // function for party inactive
+
+    public function party_inactive(Request $request)
+    {
+
+        try {
+            $party = Party_ser::party_inactive();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Party inactive List fetched successfully',
+                'data' => $party,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch inactive party list: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for party status update
+
+    public function party_status_update(Request $request)
+    {
+        $rule = [
+            'party_id' => 'required|string',
+            'status' => 'required|string|in:active,inactive',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $party = Party::find($request->party_id);
+
+            if ($party) {
+                $party->status = $request->status;
+                $party->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Party status updated successfully',
+                'data' => $party,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update party status: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -139,7 +202,8 @@ class Party_cnt extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-             \Log::error('Party profile error: '.$e->getMessage());
+            \Log::error('Party profile error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch party profile: '.$e->getMessage(),
@@ -166,7 +230,7 @@ class Party_cnt extends Controller
             ], 422);
         }
 
-        try{
+        try {
             $party_cash = Party_ser::party_pay_in($request->all());
 
             return response()->json([
@@ -202,7 +266,7 @@ class Party_cnt extends Controller
             ], 422);
         }
 
-        try{
+        try {
             $party_cash = Party_ser::party_pay_out($request->all());
 
             return response()->json([
@@ -238,7 +302,7 @@ class Party_cnt extends Controller
             ], 422);
         }
 
-        try{
+        try {
             $party_cash = Party_ser::party_pay_edit($request->all());
 
             return response()->json([
@@ -248,7 +312,7 @@ class Party_cnt extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-           
+
             return response()->json([
                 'success' => false,
                 'message' => 'Party pay edit failed: '.$e->getMessage(),

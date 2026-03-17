@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Str;
+use Pdo\Mysql;
 
 return [
 
@@ -59,17 +60,18 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 
         'tenant' => [
             'driver' => 'mysql',
-            'host' => env('DB_HOST', 'cogosmart-db.cjkwemokw0ru.ap-south-1.rds.amazonaws.com'),
+            // 'host' => env('DB_HOST', 'cogosmart-db.cjkwemokw0ru.ap-south-1.rds.amazonaws.com'),
+            'host' => env('DB_HOST'),
             'port' => env('DB_PORT', '3306'),
             'database' => null,          // IMPORTANT
-            'username' => env('DB_USERNAME', 'cogosmart'),
-            'password' => env('DB_PASSWORD', 'cogosmart123'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', 'root'),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
@@ -92,7 +94,7 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 
