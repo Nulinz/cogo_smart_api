@@ -10,6 +10,7 @@ use App\Models\Stock_in;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class Farmer_ser
 {
@@ -342,5 +343,169 @@ class Farmer_ser
         $farmers = Farmer::where('status', 'inactive')->get();
 
         return $farmers;
+    }
+
+    // function to farmer advance report
+
+    public static function farmer_advance_report()
+    {
+        $advances = Farmer_cash::query()
+            ->with(['farm_data:id,farm_en'])
+            ->select('farm_id')
+            ->selectRaw("SUM(CASE WHEN type = 'advance' THEN amount ELSE 0 END) as total_advance")
+            ->selectRaw("SUM(CASE WHEN type = 'advance_deduct' THEN amount ELSE 0 END) as total_deduct")
+            ->selectRaw("
+                    SUM(CASE WHEN type = 'advance' THEN amount ELSE 0 END) -
+                    SUM(CASE WHEN type = 'advance_deduct' THEN amount ELSE 0 END)
+                    as pending_amount
+                ")
+            ->groupBy('farm_id')
+            ->get();
+
+        $adv = $advances->map(function ($item) {
+            return [
+                'farm_id' => $item->farm_id,
+                'farm_en' => $item->farm_data->farm_en ?? 'Unknown',
+                'total_advance' => $item->total_advance,
+                'total_deduct' => $item->total_deduct,
+                'pending_amount' => $item->pending_amount,
+            ];
+        });
+
+        return $adv;
+
+    }
+
+    // fucntion to get farmer coconut report
+
+    public static function farmer_coconut_report(array $data)
+    {
+
+        $farm_id = $data['farm_id'] ?? null;
+        $start_date = $data['start_date'] ?? null;
+        $end_date = $data['end_date'] ?? null;
+
+        $coconutData_in_stock = Stock_in::query()->with(['farm_data:id,farm_en'])->where('cat', 'purchase')->where('farm_id', $farm_id)
+            ->when($start_date, function ($query) use ($start_date) {
+                $query->whereDate('created_at', '>=', $start_date);
+            })
+            ->when($end_date, function ($query) use ($end_date) {
+                $query->whereDate('created_at', '<=', $end_date);
+            })
+            ->select('id', 'farm_id', 'total_piece', 'created_at')
+            ->get()->map(function ($item) {
+                $item->table = 'stock_in';
+
+                return $item;
+            });
+
+        $coconutData_in_load = Load::query()->with(['farmer_data:id,farm_en'])->where('cat', 'add')->where('farmer_id', $farm_id)
+            ->when($start_date, function ($query) use ($start_date) {
+                $query->whereDate('created_at', '>=', $start_date);
+            })
+            ->when($end_date, function ($query) use ($end_date) {
+                $query->whereDate('created_at', '<=', $end_date);
+            })
+            ->select('id', 'farmer_id', 'total_piece', 'created_at')
+            ->get()
+            ->map(function ($item) {
+                $item->farm_id = $item->farmer_id; // create farm_id manually
+                $item->table = 'load';
+
+                return $item;
+            });
+
+        // Log::info('Coconut Data in Stock', [
+        //     'stock' => $coconutData_in_stock->toArray(),
+        // ]);
+
+        $coconutData = $coconutData_in_stock->concat($coconutData_in_load);
+
+        $report = $coconutData->map(function ($item) {
+            return [
+                'farm_id' => $item->farm_id,
+                'farm_en' => $item->farm_data->farm_en
+                    ?? $item->farmer_data->farm_en
+                    ?? 'Unknown',
+                'total_pieces' => $item->total_piece,
+                'table' => $item->table ?? 'Unknown',
+                'created_at' => date('d-m-Y H:i:s', strtotime($item->created_at)),
+            ];
+        });
+
+        return $report;
+    }
+
+    // function to get farmer advance deduct report
+
+    public static function farmer_advance_deduct_report(array $data)
+    {
+
+        $farm_id = $data['farm_id'] ?? null;
+        // $start_date = $data['start_date'] ?? null;
+        // $end_date = $data['end_date'] ?? null;
+
+        $deducts = Farmer_cash::query()
+
+            ->with(['farm_data:id,farm_en'])
+            ->where('farm_id', $farm_id)
+            ->where('type', '!=', 'purchase')
+            // ->when($start_date && $end_date, function ($query) use ($start_date, $end_date) {
+            //     $query->whereBetween('created_at', [$start_date, $end_date]);
+            // })
+            ->select('id', 'farm_id', 'type', 'method', 'amount', 'created_at')
+            ->orderby('id', 'desc')
+            ->get();
+
+        $report = $deducts->map(function ($item) {
+            return [
+                'farm_id' => $item->farm_id,
+                'farm_en' => $item->farm_data->farm_en ?? 'Unknown',
+                'amount' => $item->amount,
+                'type' => $item->type,
+                'method' => $item->method,
+                'date' => date('d-m-Y H:i:s', strtotime($item->created_at)),
+            ];
+        });
+
+        return $report;
+    }
+
+    // function to get farmer payment out report
+
+    public static function farmer_payment_out_report(array $data)
+    {
+
+        $farm_id = $data['farm_id'] ?? null;
+        $start_date = $data['start_date'] ?? null;
+        $end_date = $data['end_date'] ?? null;
+
+        $payments = Farmer_cash::query()
+            ->with(['farm_data:id,farm_en'])
+            ->where('farm_id', $farm_id)
+            ->where('type', 'purchase')
+            ->when($start_date, function ($query) use ($start_date) {
+                $query->whereDate('created_at', '>=', $start_date);
+            })
+            ->when($end_date, function ($query) use ($end_date) {
+                $query->whereDate('created_at', '<=', $end_date);
+            })
+            ->select('id', 'farm_id', 'amount', 'type', 'method', 'created_at')
+            ->orderby('id', 'desc')
+            ->get();
+
+        $report = $payments->map(function ($item) {
+            return [
+                'farm_id' => $item->farm_id,
+                'farm_en' => $item->farm_data->farm_en ?? 'Unknown',
+                'amount' => $item->amount,
+                'method' => $item->method,
+                'type' => $item->type,
+                'date' => date('d-m-Y H:i:s', strtotime($item->created_at)),
+            ];
+        });
+
+        return $report;
+
     }
 }

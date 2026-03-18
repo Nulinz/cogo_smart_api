@@ -319,4 +319,109 @@ class Party_cnt extends Controller
             ], 500);
         }
     }
+
+    // function for party invoice report
+
+    public function party_invoice_report(Request $request)
+    {
+        $rule = [
+            'party_id' => 'required|string',
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $report = Party_ser::party_invoice_report($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch party invoice report: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for party payment out report
+
+    public function party_payment_out_report(Request $request)
+    {
+        $rule = [
+            'party_id' => 'required|string',
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $report = Party_ser::party_payment_out_report($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch party payment out report: '.$e->getMessage(),
+            ], 500);
+        }
+
+    }
+
+    // fucntion for party payment in report
+
+    public function party_payment_pending_report(Request $request)
+    {
+        $rule = [
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $report = Party_ser::party_payment_pending_report($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch party payment in report: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 }

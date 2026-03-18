@@ -230,6 +230,8 @@ class Farmer_cnt extends Controller
             'pay_method' => 'required|string',
         ];
 
+        // \Log::info('Farmer pay in request data: ', $request->all());
+
         $validator = Validator::make($request->all(), $rule);
 
         if ($validator->fails()) {
@@ -350,6 +352,134 @@ class Farmer_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update farmer status: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for farmer advance report
+
+    public function farmer_advance_report(Request $request)
+    {
+
+        try {
+            $report = Farmer_ser::farmer_advance_report();
+
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch farmer advance report: '.$e->getMessage(),
+            ], 500);
+        }
+
+    }
+
+    // function for farmer coconut report
+
+    public function farmer_coconut_report(Request $request)
+    {
+        $rule = [
+            'farm_id' => 'required|string',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $report = Farmer_ser::farmer_coconut_report($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch farmer coconut report: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for farmer advance deduct report
+
+    public function farmer_advance_deduct_report(Request $request)
+    {
+
+        $rule = [
+            'farm_id' => 'required|string',
+            // 'start_date' => 'nullable|date',
+            // 'end_date' => 'nullable|date|after_or_equal:start_date',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $report = Farmer_ser::farmer_advance_deduct_report($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch farmer advance deduct report: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for farmer payment out report
+
+    public function farmer_payment_out_report(Request $request)
+    {
+        $rule = [
+            'farm_id' => 'required|string',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $report = Farmer_ser::farmer_payment_out_report($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch farmer payment out report: '.$e->getMessage(),
             ], 500);
         }
     }

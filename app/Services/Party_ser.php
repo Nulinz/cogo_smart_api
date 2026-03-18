@@ -12,6 +12,7 @@ use App\Models\Shift;
 use App\Models\Stock_out;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class Party_ser
 {
@@ -340,7 +341,7 @@ class Party_ser
 
         $party_other_amount = $party_others->sum('bill_amount');
 
-        $party_stock = Stock_out::with(['product:id,name_en'])->where('cat', 'sales')->where('farm_id', $party_id)->select('id', 'total_piece', 'bill_amount', 'created_at', 'product_id')->get()->map(function ($item) {
+        $party_stock = Stock_out::with(['product:id,name_en'])->where('cat', 'sales')->where('farm_id', $party_id)->select('id', 'total_piece', 'bill_amount', 'created_at', 'product_id', 'inv_no')->get()->map(function ($item) {
             $item->source = 'sales';
 
             return $item;
@@ -490,5 +491,232 @@ class Party_ser
 
         return $parties;
 
+    }
+
+    // function to party invoice report
+
+    public static function party_invoice_report(array $data)
+    {
+        // code here
+        $party_id = $data['party_id'];
+        $start_date = $data['start_date'] ?? null;
+        $end_date = $data['end_date'] ?? null;
+        $party_load = Prime_load::where('party_id', $party_id)->where('status', 'active')->where('load_status', 'inv_completed')->pluck('id');
+        $inv_data = M_invoice::with(['invoice_items:id,inv_id,product,bill_amt'])->whereIn('load_id', $party_load)
+            ->when($start_date, function ($query) use ($start_date) {
+                $query->whereDate('created_at', '>=', $start_date);
+            })
+            ->when($end_date, function ($query) use ($end_date) {
+                $query->whereDate('created_at', '<=', $end_date);
+            })
+            ->select('id', 'inv_no', 'load_id', 'created_at', 'charges')
+            // ->select('id', 'load_id', 'bill_amt', 'created_at')
+            ->get()->map(function ($item) {
+
+                $item->source = 'invoice';
+                $item->inv_no = $item->inv_no ?? null;
+                // sum of pieces from product column
+                $item->total_piece = $item->invoice_items->sum('product');
+                $base_amount = $item->invoice_items->sum('bill_amt');
+
+                $inv_prime = $item->charges ?? [];
+                $inv_amount = 0;
+
+                if (is_array($inv_prime)) {
+                    $inv_amount = array_sum(
+                        array_map('floatval', array_column($inv_prime, 'amt'))
+                    );
+                }
+
+                // \Log::info('Charge Out for Invoice ID '.$item->id.': ', $inv_prime);
+                // \Log::info('Total Amount before Charge for Invoice ID '.$item->id.': '.$base_amount);
+                // \Log::info('Total Amount after Charge for Invoice ID '.$item->id.': '.($base_amount + $inv_amount));
+
+                // sum bill amount
+                $item->bill_amount_mapped = $base_amount + $inv_amount;
+
+                return $item;
+            });
+
+        // Log::info('Invoice Data: ', $inv_data->toArray());
+
+        $sal_data = Stock_out::with(['product:id,name_en'])->where('cat', 'sales')->where('farm_id', $party_id)
+            ->when($start_date, function ($query) use ($start_date) {
+                $query->whereDate('created_at', '>=', $start_date);
+            })
+            ->when($end_date, function ($query) use ($end_date) {
+                $query->whereDate('created_at', '<=', $end_date);
+            })
+            ->select('id', 'total_piece', 'bill_amount', 'created_at', 'product_id', 'inv_no')
+            ->get()->map(function ($item) {
+                $item->source = 'sales';
+
+                $item->bill_amount_mapped = $item->bill_amount; // Use the sum from invoice_items
+
+                return $item;
+            });
+
+        $shift_others = Shift::with(['product_data:id,name_en'])->where('cat', 'others')->where('party_id', $party_id)
+            ->when($start_date, function ($query) use ($start_date) {
+                $query->whereDate('created_at', '>=', $start_date);
+            })
+            ->when($end_date, function ($query) use ($end_date) {
+                $query->whereDate('created_at', '<=', $end_date);
+            })
+            ->get()->map(function ($item) {
+                $item->source = 'others';
+                $item->bill_amount_mapped = $item->bill_amount ?? null;
+
+                return $item;
+            });
+
+        \Log::info('Shift Others Data: ', $shift_others->toArray());
+
+        $inv_list = $inv_data
+            ->concat($sal_data)
+            ->concat($shift_others)
+            ->sortByDesc('created_at')
+            ->values()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    // 'load_id' => $item->load_id ?? null,
+                    'source' => $item->source,
+                    'inv_no' => $item->inv_no ?? null,
+                    'total_piece' => $item->total_piece ?? null,
+                    'bill_amount' => $item->bill_amount_mapped ?? 0,
+                    'created_at' => $item->created_at,
+                ];
+            });
+
+        return $inv_list;
+
+    }
+
+    // function to party payment out report
+
+    public static function party_payment_out_report(array $data)
+    {
+        $party_id = $data['party_id'];
+        $start_date = $data['start_date'] ?? null;
+        $end_date = $data['end_date'] ?? null;
+
+        $payment_out = Party_cash::where('party_id', $party_id)->where('type', 'pay_out')
+            ->when($start_date, function ($query) use ($start_date) {
+                $query->whereDate('created_at', '>=', $start_date);
+            })
+            ->when($end_date, function ($query) use ($end_date) {
+                $query->whereDate('created_at', '<=', $end_date);
+            })
+            ->select('id', 'amount', 'method', 'created_at')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return $payment_out;
+    }
+
+    // function to party payment pending in report
+
+    public static function party_payment_pending_report(array $data)
+    {
+        $start_date = $data['start_date'] ?? null;
+        $end_date = $data['end_date'] ?? null;
+
+        $parties = Party::select('id', 'party_en')->get();
+
+        $report = $parties->map(function ($party) use ($start_date, $end_date) {
+
+            $party_id = $party->id;
+
+            /* -----------------------------
+            PAYMENT OUT
+            ------------------------------*/
+
+            $payment_out = Party_cash::where('party_id', $party_id)
+                ->where('type', 'pay_out')
+                ->when($start_date, function ($q) use ($start_date) {
+                    $q->whereDate('created_at', '>=', $start_date);
+                })
+                ->when($end_date, function ($q) use ($end_date) {
+                    $q->whereDate('created_at', '<=', $end_date);
+                })
+                ->sum('amount');
+
+            /* -----------------------------
+            INVOICE TOTAL
+            ------------------------------*/
+
+            $party_load = Prime_load::where('party_id', $party_id)
+                ->where('status', 'active')
+                ->where('load_status', 'inv_completed')
+                ->pluck('id');
+
+            $invoice_total = M_invoice::with('invoice_items')
+                ->whereIn('load_id', $party_load)
+                ->when($start_date, function ($q) use ($start_date) {
+                    $q->whereDate('created_at', '>=', $start_date);
+                })
+                ->when($end_date, function ($q) use ($end_date) {
+                    $q->whereDate('created_at', '<=', $end_date);
+                })
+                ->get()
+                ->sum(function ($inv) {
+
+                    $base_amount = $inv->invoice_items->sum('bill_amt');
+
+                    $charges = $inv->charges ?? [];
+                    $charge_amt = 0;
+
+                    if (is_array($charges)) {
+                        $charge_amt = array_sum(
+                            array_map('floatval', array_column($charges, 'amt'))
+                        );
+                    }
+
+                    return $base_amount + $charge_amt;
+                });
+
+            /* -----------------------------
+            SALES
+            ------------------------------*/
+
+            $sales_total = Stock_out::where('cat', 'sales')
+                ->where('farm_id', $party_id)
+                ->when($start_date, function ($q) use ($start_date) {
+                    $q->whereDate('created_at', '>=', $start_date);
+                })
+                ->when($end_date, function ($q) use ($end_date) {
+                    $q->whereDate('created_at', '<=', $end_date);
+                })
+                ->sum('bill_amount');
+
+            /* -----------------------------
+            SHIFT OTHERS
+            ------------------------------*/
+
+            $others_total = Shift::where('cat', 'others')
+                ->where('party_id', $party_id)
+                ->when($start_date, function ($q) use ($start_date) {
+                    $q->whereDate('created_at', '>=', $start_date);
+                })
+                ->when($end_date, function ($q) use ($end_date) {
+                    $q->whereDate('created_at', '<=', $end_date);
+                })
+                ->sum('bill_amount');
+
+            $total_invoice = $invoice_total + $sales_total + $others_total;
+
+            $pending = $total_invoice - $payment_out;
+
+            return [
+                'party_id' => $party->id,
+                'party_name' => $party->party_en,
+                'invoice_total' => $total_invoice,
+                'payment_out' => (int) $payment_out,
+                'pending_amount' => $pending,
+            ];
+        });
+
+        return $report->values();
     }
 }

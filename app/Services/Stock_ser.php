@@ -10,6 +10,7 @@ use App\Models\Filter;
 use App\Models\Kyc;
 use App\Models\Load;
 use App\Models\M_invoice;
+use App\Models\Party;
 use App\Models\Petty_cash;
 use App\Models\Prime_load;
 use App\Models\Shift;
@@ -775,18 +776,40 @@ class Stock_ser
             //    $inv_data = Self::get_invoice($data);
             $inv_data = M_invoice::where('load_id', $data['load_id'])->with(['invoice_items', 'load_data', 'invoice_items.product_data:id,name_en', 'load_data.party_data:id,party_en,party_location'])->get();
 
+            $party_id = $inv_data->first()->load_data->party_id ?? null;
+
         } elseif (($data['type'] == 'sales')) {
             // get e invoice data
             $inv_data = Stock_out::with(['product:id,name_en'])->where('id', $data['load_id'])->get();
+
+            $party_id = $inv_data->first()->farm_id ?? null;
+
+            // dd($inv_data);
+
         } else {
             $inv_data = Shift::with(['product_data:id,name_en'])->where('id', $data['load_id'])->get();
+
+            $party_id = $inv_data->first()->party_id ?? null;
         }
 
-        $prime_load = Prime_load::with(['party_data:id,party_en,party_location,com_name,com_add'])->where('id', $load_id)->first();
+        $prime_load = null;
+        $party_bal = null;
 
-        $party_bal = Party_ser::party_profile(['party_id' => $prime_load->party_id]);
+        if ($party_id) {
+            $prime_load = Party::where('id', $party_id)->first();
 
-        $prime_load->party_balance = $party_bal['data']['balance'] ?? 0;
+            if ($prime_load) {
+                $party_bal = Party_ser::party_profile(['party_id' => $prime_load->id]);
+                $prime_load->party_balance = $party_bal['data']['balance'] ?? 0;
+            }
+        }
+
+        // $prime_load = Prime_load::with(['party_data:id,party_en,party_location,com_name,com_add'])->where('id', $load_id)->first();
+        // $prime_load = Party::where('id', $party_id)->first();
+
+        // $party_bal = Party_ser::party_profile(['party_id' => $prime_load->party_id]);
+
+        // $prime_load->party_balance = $party_bal['data']['balance'] ?? 0;
 
         $trader_kyc = Kyc::where('user_id', Auth('tenant')->user()->id)->first();
 
@@ -800,7 +823,16 @@ class Stock_ser
             $trader_kyc = null; // or return empty response
         }
 
-        return ['invoice' => $inv_data, 'prime_load' => $prime_load, 'trader_kyc' => $trader_kyc];
+        $prime_party_add = [
+            'party_name' => $prime_load->party_en ?? null,
+            'party_location' => $prime_load->party_location ?? null,
+            'mobile' => $prime_load->party_ph_no ?? null,
+            'com_name' => $prime_load->com_name ?? null,
+            'com_add' => $prime_load->com_add ?? null,
+            'party_balance' => $prime_load->party_balance ?? 0,
+        ];
+
+        return ['invoice' => $inv_data, 'prime_load' => $prime_party_add, 'trader_kyc' => $trader_kyc];
 
         // return $inv_data;
 

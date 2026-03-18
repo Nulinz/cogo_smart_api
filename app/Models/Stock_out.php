@@ -73,9 +73,11 @@ class Stock_out extends Model
                     $parts = explode('-', $lastSeq);
 
                     $prefix = $parts[0] ?? 'SI';
-                    $last = $parts[1] ?? 0;
+                    // $last = $parts[1] ?? 0;
+                    $last = (int) ($parts[1] ?? 0);
 
                     $next = $last + 1;
+
                 }
 
             }

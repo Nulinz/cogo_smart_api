@@ -585,24 +585,36 @@ class Stock_cnt extends Controller
             //     ->sum('total_amt');
 
             // Stock In
-            $stock_in_query = Stock_in::whereBetween('created_at', [$start, $end]);
+            $stock_in_query = Stock_in::query()
+                ->when($start, function ($query) use ($start) {
+                    $query->whereDate('created_at', '>=', $start);
+                })
+                ->when($end, function ($query) use ($end) {
+                    $query->whereDate('created_at', '<=', $end);
+                });
             $stock_in_data = $stock_in_query->sum('total_amt');
             $stock_in_count = $stock_in_query->sum('total_piece');
 
             // $stock_out_data = Stock_out::whereBetween('created_at', [$start, $end])
             //     ->sum('total_amt');
 
-            $stock_out_query = Stock_out::whereBetween('created_at', [$start, $end]);
+            $stock_out_query = Stock_out::query()
+                ->when($start, function ($query) use ($start) {
+                    $query->whereDate('created_at', '>=', $start);
+                })
+                ->when($end, function ($query) use ($end) {
+                    $query->whereDate('created_at', '<=', $end);
+                });
             $stock_out_data = $stock_out_query->sum('total_amt');
             $stock_out_count = $stock_out_query->sum('total_piece');
 
-            $profit_loss = $stock_in_data - $stock_out_data;
+            $profit_loss = $stock_out_data - $stock_in_data;
 
             $data = [
                 'stock_in' => $stock_in_data,
+                'stock_out' => $stock_out_data,
                 'stock_in_count' => $stock_in_count,
                 'stock_out_count' => $stock_out_count,
-                'stock_out' => $stock_out_data,
                 'profit_loss' => $profit_loss,
             ];
 

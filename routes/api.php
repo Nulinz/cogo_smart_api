@@ -210,4 +210,15 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/vehicle_count_month', [Chart_cnt::class, 'vehicle_count_month']);
     Route::post('/profit_loss_year', [Chart_cnt::class, 'profit_loss_year']);
 
+    // report for framer advance
+
+    Route::post('/farmer_advance_report', [Farmer_cnt::class, 'farmer_advance_report']);
+    Route::post('/farmer_coconut_report', [Farmer_cnt::class, 'farmer_coconut_report']);
+    Route::post('/farmer_advance_deduct_report', [Farmer_cnt::class, 'farmer_advance_deduct_report']);
+    Route::post('/farmer_payment_out_report', [Farmer_cnt::class, 'farmer_payment_out_report']);
+
+    Route::post('/party_invoice_report', [Party_cnt::class, 'party_invoice_report']);
+    Route::post('/party_payment_out_report', [Party_cnt::class, 'party_payment_out_report']);
+    Route::post('/party_payment_pending_report', [Party_cnt::class, 'party_payment_pending_report']);
+
 });
