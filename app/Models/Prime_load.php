@@ -4,14 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use App\Models\User;
-use App\Models\Party;
-use App\Models\Transporter;
-use App\Models\Truck_capacity;
 
 class Prime_load extends Model
 {
-     protected $connection = 'tenant';  // Use tenant DB
+    protected $connection = 'tenant';  // Use tenant DB
 
     protected $table = 'm_load';
 
@@ -48,7 +44,7 @@ class Prime_load extends Model
         static::creating(function ($model) {
 
             // Prefix (can be static or from config/db)
-           $padding = 0; // Default padding
+            $padding = 0; // Default padding
 
             // Check if any farmer exists
             $count = self::count();
@@ -58,12 +54,11 @@ class Prime_load extends Model
             if ($count === 0) {
                 // First insert, fetch prefix & start number from sequence table
                 $seq = DB::connection('tenant')->table('m_sequence')->where('status', 'active')->first();
-                    // ->where('module', 'farmer')
-                    // ->where('status', 'active')
-                    
+                // ->where('module', 'farmer')
+                // ->where('status', 'active')
 
                 $prefix = $seq->load_pref ?? 'CGSL';
-                $next   = $seq->load_suf ?? 1;
+                $next = $seq->load_suf ?? 1;
                 // $padding = 0;
 
             } else {
@@ -76,16 +71,15 @@ class Prime_load extends Model
                 $prefix = substr($lastSeq, 0, strpos($lastSeq, '-'));
 
                 $prefix = explode('-', $lastSeq)[0];
-                $last  = explode('-', $lastSeq)[1];
+                $last = explode('-', $lastSeq)[1];
                 $next = $last + 1;
-                 
-        }
+
+            }
 
             // Generate sequence CGSL-001
-            $model->load_seq = $prefix . '-' . str_pad($next,$padding, '0', STR_PAD_LEFT);
+            $model->load_seq = $prefix.'-'.str_pad($next, $padding, '0', STR_PAD_LEFT);
         });
     }
-
 
     // public function team_members()
     // {
@@ -94,11 +88,11 @@ class Prime_load extends Model
 
     public function getTeamMembersAttribute()
     {
-        if (empty($this->team) || !is_array($this->team)) {
+        if (empty($this->team) || ! is_array($this->team)) {
             return collect();
         }
 
-        return User::whereIn('id', $this->team)->select('id','name')->get();
+        return User::whereIn('id', $this->team)->select('id', 'name')->get();
     }
 
     public function party_data()
@@ -118,7 +112,7 @@ class Prime_load extends Model
 
     public function truck_capacity()
     {
-        return $this->belongsTo(Truck_capacity::class, 'truck_capacity','id');
+        return $this->belongsTo(Truck_capacity::class, 'truck_capacity', 'id');
     }
 
     public function product_data()
@@ -136,12 +130,17 @@ class Prime_load extends Model
         return $this->hasMany(Shift::class, 'load_id', 'id');
     }
 
-   public function getCreatedByAttribute()
+    public function getCreatedByAttribute()
     {
-        if (!$this->c_by) {
+        if (! $this->c_by) {
             return 'Unknown';
         }
 
         return User::where('id', $this->c_by)->value('name') ?? 'Unknown';
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(M_invoice::class, 'load_id', 'id');
     }
 }

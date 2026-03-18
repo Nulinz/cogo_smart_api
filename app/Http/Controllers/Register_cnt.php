@@ -2,23 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Kyc;
 use App\Models\Master;
 use App\Models\Master_db;
-use App\Models\User;
-use App\Services\Otp;
-use App\Services\Tenant_db;
-use App\Services\Base_ser;
-use App\Models\Petty_cash;
-use App\Models\Farmer_cash;
-use App\Services\Stock_ser;
 use App\Models\Sequence;
-use App\Models\Kyc;
-use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
+use App\Models\User;
+use App\Services\Base_ser;
+use App\Services\Otp;
+use App\Services\Stock_ser;
+use App\Services\Tenant_db;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
@@ -28,10 +25,9 @@ class Register_cnt extends Controller
     // function to refresh token
     public function refresh_token()
     {
-          // both error occur 401
+        // both error occur 401
 
-
-            //{"error": "token_expired"},{"error": "session_expired"} -----------------------
+        // {"error": "token_expired"},{"error": "session_expired"} -----------------------
 
         try {
             $newToken = JWTAuth::refresh(JWTAuth::getToken());
@@ -155,9 +151,9 @@ class Register_cnt extends Controller
 
                 ]);
 
-                $product = ['Tender Coconut','katki','Bombay katki'];
+                $product = ['Tender Coconut', 'katki', 'Bombay katki'];
 
-                foreach($product as $prod){
+                foreach ($product as $prod) {
 
                     DB::connection('tenant')->table('m_product')->insert([
                         'name_en' => $prod,
@@ -169,9 +165,9 @@ class Register_cnt extends Controller
                     ]);
                 }
 
-                $quality = ['Size Mixing','Mixing','Top Size Mixing','Size'];
+                $quality = ['Size Mixing', 'Mixing', 'Top Size Mixing', 'Size'];
 
-                 foreach($quality as $qual){
+                foreach ($quality as $qual) {
 
                     DB::connection('tenant')->table('quality')->insert([
                         'quality' => $qual,
@@ -182,9 +178,13 @@ class Register_cnt extends Controller
                     ]);
                 }
 
+<<<<<<< HEAD
                 $loss_category = ['Shortage','Quality Issue','Discount'];
+=======
+                $loss_cartegory = ['Shortage', 'Quality Issue', 'Discount'];
+>>>>>>> 95fad445278103a9ba404013b3132ab4accf9bac
 
-                 foreach($loss_category as $loss){
+                foreach ($loss_category as $loss) {
 
                     DB::connection('tenant')->table('loss_category')->insert([
                         'loss' => $loss,
@@ -195,9 +195,9 @@ class Register_cnt extends Controller
                     ]);
                 }
 
-                $truck_capacity = ['25 Ton','30 Ton','12 Ton'];
+                $truck_capacity = ['25 Ton', '30 Ton', '12 Ton'];
 
-                 foreach($truck_capacity as $truck){
+                foreach ($truck_capacity as $truck) {
 
                     DB::connection('tenant')->table('truck_cap')->insert([
                         'capacity' => $truck,
@@ -209,9 +209,9 @@ class Register_cnt extends Controller
                     ]);
                 }
 
-                $exp_cat = ['Loading','Food','Travel','Other Expenses'];
+                $exp_cat = ['Loading', 'Food', 'Travel', 'Other Expenses'];
 
-                 foreach($exp_cat as $exp){
+                foreach ($exp_cat as $exp) {
 
                     DB::connection('tenant')->table('exp_cat')->insert([
                         'cat' => $exp,
@@ -221,7 +221,6 @@ class Register_cnt extends Controller
                         'updated_at' => now(),
                     ]);
                 }
-
 
                 DB::connection('tenant')->table('m_sequence')->insert([
                     'load_pref' => 'LOAD',
@@ -235,8 +234,6 @@ class Register_cnt extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-               
-
 
                 $token = JWTAuth::claims([
                     'db_name' => $master->db_name,
@@ -252,6 +249,7 @@ class Register_cnt extends Controller
 
             } catch (\Exception $e) {
                 \Log::error('Tenant DB creation failed: '.$e->getMessage());
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Database connection failed: '.$e->getMessage(),
@@ -267,6 +265,7 @@ class Register_cnt extends Controller
 
         } catch (\Exception $e) {
             \Log::error('User registration failed: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'User registration failed: '.$e->getMessage(),
@@ -317,6 +316,7 @@ class Register_cnt extends Controller
 
     public function login_phone(Request $request)
     {
+
         $rule = [
             'phone' => 'required|string',
 
@@ -331,9 +331,18 @@ class Register_cnt extends Controller
         }
 
         try {
-             Tenant_db::main(); // switch to main DB
+            Tenant_db::main(); // switch to main DB
+
+            // Log::info('Current DB connection', [
+            //     'default' => DB::getDefaultConnection(),
+            //     'database' => DB::connection()->getDatabaseName(),
+            // ]);
+
+            // Log::info('tenant db switched for login phone', ['phone' => $request->phone]);
 
             $mainUser = DB::table('users')->where('phone', $request->phone)->first();
+
+            // Log::info('Login phone called', ['request' => $mainUser]);
 
             // $user = User::where('phone', $request->phone)->first();
 
@@ -341,7 +350,7 @@ class Register_cnt extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'User not found',
-                    
+
                 ], 404);
             }
 
@@ -355,14 +364,14 @@ class Register_cnt extends Controller
             //         'success' => false,
             //         'message' => 'OTP not verified',
             //         'data'=>$user_data->role
-                    
+
             //     ], 403);
             // }
 
             return response()->json([
                 'success' => true,
                 'message' => 'User found',
-                'data'=>$mainUser
+                'data' => $mainUser,
 
             ], 200);
         } catch (\Exception $e) {
@@ -389,13 +398,11 @@ class Register_cnt extends Controller
         //     return response()->json(['error' => 'User not found in main DB'], 404);
         // }
 
-       
-
-            $rule = [
-                'phone' => 'required|string',
-                'password' => 'required|string',
-                'db_name' => 'required|string',
-            ];
+        $rule = [
+            'phone' => 'required|string',
+            'password' => 'required|string',
+            'db_name' => 'required|string',
+        ];
 
         $validator = Validator::make($request->all(), $rule);
 
@@ -406,32 +413,29 @@ class Register_cnt extends Controller
             ], 422);
         }
 
-        try{
+        try {
 
             Tenant_db::connect($request->db_name); // switch to tenant DB
 
-            
-
             $user = User::where('phone', $request->phone)->where('password', $request->password)->first();
 
-            if(! $user){
-                return response()->json(['success'=>false,'error' => 'Invalid credentials'], 401);
+            if (! $user) {
+                return response()->json(['success' => false, 'error' => 'Invalid credentials'], 401);
             }
 
             $token = JWTAuth::claims([
-                        'db_name' => $request->db_name,
-                    ])->fromUser($user);
+                'db_name' => $request->db_name,
+            ])->fromUser($user);
 
             Auth::guard('tenant')->setUser($user);
 
-           // 👉 Get payload FROM the token you just created
+            // 👉 Get payload FROM the token you just created
             $payload = JWTAuth::setToken($token)->getPayload();
 
             // 👉 Extract expiry (exp)
             $expiresAt = $payload->get('exp'); // UNIX timestamp
 
             $exp = date('Y-m-d H:i:s', $expiresAt);
-
 
             // return response()->json([
             //     // 'token' => $token,
@@ -463,13 +467,12 @@ class Register_cnt extends Controller
 
             // Manually generate JWT token for this user
             // Generate token with tenant DB inside it
-        
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Login failed: '.$e->getMessage(),
-            ], 500);    
+            ], 500);
         }
     }
 
@@ -524,10 +527,10 @@ class Register_cnt extends Controller
 
         // $payload = JWTAuth::parseToken()->getPayload();
 
-         $token = JWTAuth::getToken();
-            $payload =  $payload = JWTAuth::manager()
-                    ->getJWTProvider()
-                    ->decode($token);
+        $token = JWTAuth::getToken();
+        $payload = $payload = JWTAuth::manager()
+            ->getJWTProvider()
+            ->decode($token);
 
         // $dbName = $payload->get('db_name');
 
@@ -550,7 +553,7 @@ class Register_cnt extends Controller
             ], 422);
         }
 
-         DB::beginTransaction();
+        DB::beginTransaction();
 
         try {
             $user = User::create([
@@ -558,11 +561,11 @@ class Register_cnt extends Controller
                 'phone' => $request->phone,
                 'role' => $request->role,
                 'location' => $request->location,
-                'password' =>'123456',
+                'password' => '123456',
                 'status' => 'active',
             ]);
 
-            if($user){
+            if ($user) {
 
                 Tenant_db::main(); // switch to main DB
                 $master_user = DB::table('users')->insert([
@@ -586,8 +589,8 @@ class Register_cnt extends Controller
                 'data' => $user,
             ], 200);
         } catch (\Exception $e) {
-             DB::rollBack();
-             Tenant_db::connect($db); // ensure DB reset
+            DB::rollBack();
+            Tenant_db::connect($db); // ensure DB reset
 
             return response()->json([
                 'success' => false,
@@ -610,20 +613,19 @@ class Register_cnt extends Controller
         //         'errors' => $validator->errors(),
         //     ], 422);
         // }
-        try{
-             $users = User::query()
-                    ->where('status', 'active')
-                    ->select('id', 'name', 'role','location')
-                    ->get()
-                    ->map(function ($user) {
+        try {
+            $users = User::query()
+                ->where('status', 'active')
+                ->select('id', 'name', 'role', 'location')
+                ->get()
+                ->map(function ($user) {
 
-                        $data =  Stock_ser::petty_cash_ind(['emp_id'=>$user->id]);
+                    $data = Stock_ser::petty_cash_ind(['emp_id' => $user->id]);
 
-                        $user->balance = $data['balance'];
+                    $user->balance = $data['balance'];
 
-    
-                        return $user;
-                    });
+                    return $user;
+                });
 
         } catch (\Exception $e) {
             return response()->json([
@@ -631,7 +633,6 @@ class Register_cnt extends Controller
                 'message' => 'Database connection failed: '.$e->getMessage(),
             ], 500);
         }
-       
 
         return response()->json([
             'success' => true,
@@ -644,7 +645,7 @@ class Register_cnt extends Controller
     public function get_employee_details(Request $request)
     {
         $rule = [
-             'user_id' => 'required|string',
+            'user_id' => 'required|string',
         ];
         $validator = Validator::make($request->all(), $rule);
         if ($validator->fails()) {
@@ -653,26 +654,25 @@ class Register_cnt extends Controller
                 'errors' => $validator->errors(),
             ], 422);
         }
-        try{
+        try {
 
             $user = Base_ser::get_employee_details($validator->validated());
 
             //  $user = User::where('id', $request->user_id)->first();
         } catch (\Exception $e) {
             \Log::error('Get employee details failed: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Database connection failed: '.$e->getMessage(),
             ], 500);
         }
-       
 
         return response()->json([
             'success' => true,
             'data' => $user,
         ], 200);
     }
-
 
     // function tp update employee OTP verified status
 
@@ -693,18 +693,17 @@ class Register_cnt extends Controller
             ], 422);
         }
 
-        try{
-             $user = DB::table('users')->where('phone', $request->phone)->update([
+        try {
+            $user = DB::table('users')->where('phone', $request->phone)->update([
                 'otp' => $request->otp,
                 'otp_verified' => 'yes',
-             ]);
+            ]);
 
-             $main_data = DB::table('users')->where('phone', $request->phone)->first();
+            $main_data = DB::table('users')->where('phone', $request->phone)->first();
 
-             Tenant_db::connect($main_data->db_name); // switch to tenant DB
+            Tenant_db::connect($main_data->db_name); // switch to tenant DB
 
-             $user_data = User::where('phone', $request->phone)->first();
-
+            $user_data = User::where('phone', $request->phone)->first();
 
             $token = JWTAuth::claims([
                 'db_name' => $main_data->db_name,
@@ -718,17 +717,14 @@ class Register_cnt extends Controller
                 'message' => 'Database connection failed: '.$e->getMessage(),
             ], 500);
         }
-       
 
         return response()->json([
             'success' => true,
             'message' => 'OTP status updated successfully',
             'data' => $user_data,
-            'token' => $token,  
+            'token' => $token,
         ], 200);
     }
-
-
 
     // function to edit employee
 
@@ -789,7 +785,8 @@ class Register_cnt extends Controller
         }
 
         try {
-            $user = User::where('id', $request->emp_id)->select('id','name','location','role')->first();
+            $user = User::where('id', $request->emp_id)->select('id', 'name', 'location', 'role')->first();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Employee details updated successfully',
@@ -808,12 +805,13 @@ class Register_cnt extends Controller
 
     public function change_password(Request $request)
     {
-        if($request->has('type')){
-            $user = User::where('id', $request->user_id)->select('id','name','phone','password')->first();
+        if ($request->has('type')) {
+            $user = User::where('id', $request->user_id)->select('id', 'name', 'phone', 'password')->first();
+
             return response()->json([
                 'success' => true,
                 'data' => $user,
-            ], 200);    
+            ], 200);
         }
 
         $rule = [
@@ -856,14 +854,13 @@ class Register_cnt extends Controller
             ], 500);
         }
     }
-   
+
     // function for get sequence count
 
     public function get_sequence_count(Request $request)
     {
         return response()->json(['count' => Sequence::count()]);
     }
-
 
     public function forgot_password(Request $request)
     {
@@ -891,7 +888,7 @@ class Register_cnt extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'User not found',
-                    
+
                 ], 404);
             }
 
@@ -915,9 +912,9 @@ class Register_cnt extends Controller
 
     // function to add kyc and company name
 
-    public  function add_kyc(Request $request)
+    public function add_kyc(Request $request)
     {
-        \Log::info('Add KYC called',['request'=>$request->allFiles()]);
+        \Log::info('Add KYC called', ['request' => $request->allFiles()]);
         $rule = [
             'f_name' => 'required|string',
             'phone' => 'required|string',
@@ -929,78 +926,74 @@ class Register_cnt extends Controller
             'com_pan' => 'required|string',
             'file' => 'nullable|file|mimes:jpg,jpeg,png',
             'signature' => 'nullable|file|mimes:jpg,jpeg,png',
-        
+
         ];
 
         $validator = Validator::make($request->all(), $rule);
 
-        if( $validator->fails()){
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
 
-        try{
+        try {
 
             $user = Auth::guard('tenant')->user(); // ✅ Works now
 
-            if($request->hasFile('file')) {
+            if ($request->hasFile('file')) {
                 \Log::info('File upload detected');
                 $file = $request->file('file');
                 $filename = 'kyc_'.time().'.'.$file->getClientOriginalExtension();
                 // $filePath = 'invoices/' . $filename;
 
-                  $destinationPath = public_path('invoices');
+                $destinationPath = public_path('invoices');
                 $file->move($destinationPath, $filename);
 
-                $filePath = 'invoices/' . $filename;
+                $filePath = 'invoices/'.$filename;
             } else {
                 $filePath = null;
             }
 
-            if($request->hasFile('signature')) {
+            if ($request->hasFile('signature')) {
                 \Log::info('Signature upload detected');
                 $signature = $request->file('signature');
                 $sig_filename = 'signature_'.time().'.'.$signature->getClientOriginalExtension();
                 // $signaturePath = 'invoices/' . $sig_filename;
-                 $destinationPath = public_path('invoices');
+                $destinationPath = public_path('invoices');
                 $signature->move($destinationPath, $sig_filename);
 
-                $signaturePath = 'invoices/' . $sig_filename;
+                $signaturePath = 'invoices/'.$sig_filename;
             } else {
                 $signaturePath = null;
             }
 
-             
-
             $kyc = Kyc::create([
 
-                    'user_id' => Auth::guard('tenant')->user()->id,
-                    'f_name' => $request->f_name,
-                    'phone' => $request->phone,
-                    'email' => $request->email,
-                    'dob' => $request->dob,
-                    'com_name' => $request->com_name,
-                    'com_address' => $request->com_address,
-                    'com_gst' => $request->com_gst,
-                    'com_pan' => $request->com_pan,
-                    'file' => $filePath,
-                    'signature' => $signaturePath,
-                    'c_by' => Auth::guard('tenant')->user()->id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                'user_id' => Auth::guard('tenant')->user()->id,
+                'f_name' => $request->f_name,
+                'phone' => $request->phone,
+                'email' => $request->email,
+                'dob' => $request->dob,
+                'com_name' => $request->com_name,
+                'com_address' => $request->com_address,
+                'com_gst' => $request->com_gst,
+                'com_pan' => $request->com_pan,
+                'file' => $filePath,
+                'signature' => $signaturePath,
+                'c_by' => Auth::guard('tenant')->user()->id,
+                'created_at' => now(),
+                'updated_at' => now(),
 
             ]);
-                    
-               
 
             return response()->json([
                 'success' => true,
                 'message' => 'KYC details added successfully',
             ], 200);
 
-        } catch (\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'KYC details addition failed: '.$e->getMessage(),
@@ -1012,7 +1005,7 @@ class Register_cnt extends Controller
 
     public function get_kyc(Request $request)
     {
-        try{
+        try {
 
             $user = Auth::guard('tenant')->user(); // ✅ Works now
 
@@ -1020,19 +1013,17 @@ class Register_cnt extends Controller
 
             $kyc->file_url = $kyc->file ? url($kyc->file) : null;
             $kyc->signature_url = $kyc->signature ? url($kyc->signature) : null;
-            
 
             return response()->json([
                 'success' => true,
                 'data' => $kyc,
             ], 200);
 
-        } catch (\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'KYC details fetch failed: '.$e->getMessage(),
             ], 500);
         }
     }
-
 }

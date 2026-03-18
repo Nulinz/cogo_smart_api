@@ -2,23 +2,18 @@
 
 namespace App\Services;
 
+use App\Models\Coconut;
+use App\Models\Expense;
+use App\Models\Expense_cat;
+use App\Models\Farmer_cash;
+use App\Models\Filter;
+use App\Models\Loss;
+use App\Models\Petty_cash;
+use App\Models\Prime_load;
 use App\Models\Quality;
 use App\Models\Transport;
 use App\Models\Truck_capacity;
-use App\Models\Loss;
-use App\Models\Coconut;
 use App\Models\User;
-use App\Services\Farmer_ser;
-use App\Models\Farmer_cash;
-use App\Models\Petty_cash;
-use App\Services\Party_ser;
-use App\Models\Prime_load;
-use App\Models\Filter;
-use App\Models\Expense_cat;
-use App\Models\Expense;
-use App\Services\Stock_ser;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -50,7 +45,8 @@ class Base_ser
 
         } else {
             // CREATE: full insert
-            Log::info("Creating quality", ['data' => $data]);
+            Log::info('Creating quality', ['data' => $data]);
+
             return Quality::create([
                 'quality' => $data['quality'],
                 'status' => $data['status'] ?? 'active',
@@ -122,7 +118,7 @@ class Base_ser
         if (isset($data['expense_id'])) {
             // UPDATE: only status
             if (isset($data['status'])) {
-                return Expense_cat::where('id', $data['expense_id'])->update([            
+                return Expense_cat::where('id', $data['expense_id'])->update([
                     'status' => $data['status'] ?? 'active',
                 ]);
             } else {
@@ -147,7 +143,7 @@ class Base_ser
         if (isset($data['loss_id'])) {
             // UPDATE: only status
             if (isset($data['status'])) {
-                return Loss::where('id', $data['loss_id'])->update([            
+                return Loss::where('id', $data['loss_id'])->update([
                     'status' => $data['status'] ?? 'active',
                 ]);
             } else {
@@ -165,81 +161,81 @@ class Base_ser
         }
     }
 
-     // fetch list of qulaities, transports, trucks
-        public static function get_common_list(array $data)
-        {
-            switch ($data['type']) {
-                case 'quality':
-                    if($data['status']=='all'){
-                        return Quality::all();
-                    }else{
-                        return Quality::where('status', $data['status'])->get();
-                    }
-                case 'transport':
-                    if($data['status']=='all'){
-                        return Transport::all();
-                    }else{
-                        return Transport::where('status', $data['status'])->get();
-                    }
-                case 'truck':
-                    if($data['status']=='all'){
-                        return Truck_capacity::all();
-                    }else{
-                        return Truck_capacity::where('status', $data['status'])->get();
-                    }
-                case 'loss':
-                    if($data['status']=='all'){
-                        return Loss::all();
-                    }else{
-                        return Loss::where('status', $data['status'])->get();
-                    }
+    // fetch list of qulaities, transports, trucks
+    public static function get_common_list(array $data)
+    {
+        switch ($data['type']) {
+            case 'quality':
+                if ($data['status'] == 'all') {
+                    return Quality::all();
+                } else {
+                    return Quality::where('status', $data['status'])->get();
+                }
+            case 'transport':
+                if ($data['status'] == 'all') {
+                    return Transport::all();
+                } else {
+                    return Transport::where('status', $data['status'])->get();
+                }
+            case 'truck':
+                if ($data['status'] == 'all') {
+                    return Truck_capacity::all();
+                } else {
+                    return Truck_capacity::where('status', $data['status'])->get();
+                }
+            case 'loss':
+                if ($data['status'] == 'all') {
+                    return Loss::all();
+                } else {
+                    return Loss::where('status', $data['status'])->get();
+                }
 
-                case 'expense':
-                    if($data['status']=='all'){
-                        return Expense_cat::all();
-                    }else{
-                        return Expense_cat::where('status', $data['status'])->get();
-                    }
-                default:
-                    return null;
-                   
-                    // throw new \InvalidArgumentException("Invalid type: $type");
-            }
+            case 'expense':
+                if ($data['status'] == 'all') {
+                    return Expense_cat::all();
+                } else {
+                    return Expense_cat::where('status', $data['status'])->get();
+                }
+            default:
+                return null;
+
+                // throw new \InvalidArgumentException("Invalid type: $type");
         }
+    }
 
-        // function to edit common entries
+    // function to edit common entries
 
-        public static function edit_common_list(array $data)
-        {
-            // similar to create_common but only updates
+    public static function edit_common_list(array $data)
+    {
+        // similar to create_common but only updates
 
-            switch ($data['type']) {
-                case 'quality':
-                    return Quality::where('id', $data['id'])->first();
-                case 'transport':
-                    return Transport::where('id', $data['id'])->first();
-                case 'truck':
-                    return Truck_capacity::where('id', $data['id'])->first();
-                case 'loss':
-                    return Loss::where('id', $data['id'])->first();
-                case 'expense':
-                    return Expense_cat::where('id', $data['id'])->first();
-                default:
-                    return null;
-                    // throw new \InvalidArgumentException("Invalid type: $type");
-            }
+        switch ($data['type']) {
+            case 'quality':
+                return Quality::where('id', $data['id'])->first();
+            case 'transport':
+                return Transport::where('id', $data['id'])->first();
+            case 'truck':
+                return Truck_capacity::where('id', $data['id'])->first();
+            case 'loss':
+                return Loss::where('id', $data['id'])->first();
+            case 'expense':
+                return Expense_cat::where('id', $data['id'])->first();
+            default:
+                return null;
+                // throw new \InvalidArgumentException("Invalid type: $type");
         }
+    }
 
-        // function to add coconut availability 
+    // function to add coconut availability
 
-        public static function add_coconut(array $data)
-        {
-            return Coconut::create([
-                'farm_id' => $data['farm_id'],
-                'coconut' => $data['coconut'],
-                'c_by'    => Auth::guard('tenant')->user()->id ?? null,
-            ]);
-        }
+    public static function add_coconut(array $data)
+    {
+        return Coconut::create([
+            'farm_id' => $data['farm_id'],
+            'coconut' => $data['coconut'],
+            'c_by' => Auth::guard('tenant')->user()->id ?? null,
+        ]);
+    }
 
     // funciton to get coconut availability
 
@@ -248,20 +244,20 @@ class Base_ser
         // \Log::info("Fetching coconut added today by employee", ['emp_id' => $data]);
         $today = date('Y-m-d');
 
-        $coconut =  Coconut::with(['emp_data:id,name,location,role'])->where('farm_id', $data['farm_id'])->whereDate('created_at', $today)->get();
+        $coconut = Coconut::with(['emp_data:id,name,location,role'])->where('farm_id', $data['farm_id'])->whereDate('created_at', $today)->get();
 
         $coconut_sum = $coconut->sum('coconut');
 
         $emp_group = $coconut->groupBy('c_by')->map(function ($item) {
 
-         $emp = $item->first()->emp_data;
+            $emp = $item->first()->emp_data;
 
             return [
-                 'emp_name'       => $emp->name ?? null,
-                 'location'       => $emp->location ?? null,
-                 'role'           => $emp->role ?? null,
+                'emp_name' => $emp->name ?? null,
+                'location' => $emp->location ?? null,
+                'role' => $emp->role ?? null,
                 // 'farmer_count'   => $item->groupBy('farm_id')->count(),
-                'total_coconut'  => $item->sum('coconut'),
+                'total_coconut' => $item->sum('coconut'),
                 // 'farm_en'  => $item->first()->farmer_data->farm_en,
                 // 'location' => $item->first()->farmer_data->location,
                 // 'total_coconut' => $item->sum('coconut'),
@@ -269,8 +265,8 @@ class Base_ser
         })->values();
 
         return [
-            'coconut_sum'  => $coconut_sum,
-            'emp_group'   => $emp_group,
+            'coconut_sum' => $coconut_sum,
+            'emp_group' => $emp_group,
         ];
     }
 
@@ -280,30 +276,28 @@ class Base_ser
     {
         $today = date('Y-m-d');
 
-        $coconut =  Coconut::with(['farmer_data:id,farm_en,location'])->whereDate('created_at', $today)->get();
+        $coconut = Coconut::with(['farmer_data:id,farm_en,location'])->whereDate('created_at', $today)->get();
 
         $coconut_sum = $coconut->sum('coconut');
 
         $farm_group = $coconut->groupBy('farm_id')->map(function ($item) {
-           $farmer = $item->first()->farmer_data;
+            $farmer = $item->first()->farmer_data;
 
-                return [
-                    'farmer_id'       => $farmer->id ?? null,
-                    'farmer_name'       => $farmer->farm_en ?? null,
-                    'location'       => $farmer->location ?? null,
-                    // 'role'           => $farmer->role ?? null,
-                    // 'farmer_count'   => $item->groupBy('farm_id')->count(),
-                    'total_coconut'  => $item->sum('coconut'),
-                ];
+            return [
+                'farmer_id' => $farmer->id ?? null,
+                'farmer_name' => $farmer->farm_en ?? null,
+                'location' => $farmer->location ?? null,
+                // 'role'           => $farmer->role ?? null,
+                // 'farmer_count'   => $item->groupBy('farm_id')->count(),
+                'total_coconut' => $item->sum('coconut'),
+            ];
         })->values();
 
-
-         return [
-            'coconut_sum'  => $coconut_sum,
-            'farm_group'   => $farm_group,
+        return [
+            'coconut_sum' => $coconut_sum,
+            'farm_group' => $farm_group,
         ];
     }
-
 
     // finction to get dashboard data
 
@@ -318,43 +312,39 @@ class Base_ser
 
         $party_card = $dash_party['head_card'];
 
+        // \Log::info('fetch data', ['farmer_card' => $farmer_card, 'party_card' => $party_card, 'user_id' => Auth::guard('tenant')->user()->id]);
 
+        $prime_load = Prime_load::with(['party_data:id,party_en,party_location', 'load_list:id,load_id,bill_piece,grace_piece,total_piece,farmer_id',
+            'shift_list:id,load_id,bill_piece,grace_piece,total_piece', ])->where('status', 'active')->where('load_status', '!=', 'inv_completed')->limit(20);
 
-        $prime_load = Prime_load::with(['party_data:id,party_en,party_location','load_list:id,load_id,bill_piece,grace_piece,total_piece,farmer_id',
-                                          'shift_list:id,load_id,bill_piece,grace_piece,total_piece',])->where('status', 'active')->where('load_status','!=','inv_completed')->limit(20);
-
-        if(Auth::guard('tenant')->user()->role != 'admin'){
+        if (Auth::guard('tenant')->user()->role != 'admin') {
 
             $prime_load->WhereJsonContains('team', [Auth::guard('tenant')->user()->id]);
         }
-                                          
-                                          
-           $prime_load = $prime_load->orderBy('id', 'desc')->get()->map(function($item){
+
+        $prime_load = $prime_load->orderBy('id', 'desc')->get()->map(function ($item) {
 
             $item->filter = Filter::where('load_id', $item->id)->sum('total');
 
-           $add_piece   = (optional($item->load_list)->sum('total_piece')) ?? 0;
-           $shift_piece = (optional($item->shift_list)->sum('total_piece')) ?? 0;
+            $add_piece = (optional($item->load_list)->sum('total_piece')) ?? 0;
+            $shift_piece = (optional($item->shift_list)->sum('total_piece')) ?? 0;
 
             $item->loaded = $add_piece - $shift_piece;
-            $item->remain  = $item->req_qty - $item->loaded;
-
-           
+            $item->remain = $item->req_qty - $item->loaded;
 
             $item->last_farmer = collect($item->load_list)
-                                ->sortByDesc('id')
-                                ->take(2)
-                                ->values()
-                                ->map(function ($load) {
-                                    return [
-                                        // 'id' => $load->id,
-                                        'farmer_det' => $load->farmer_data->farm_en ?? null,
-                                        'tp' => $load->total_piece ?? 0,
-                                    ];
-                                });
+                ->sortByDesc('id')
+                ->take(2)
+                ->values()
+                ->map(function ($load) {
+                    return [
+                        // 'id' => $load->id,
+                        'farmer_det' => $load->farmer_data->farm_en ?? null,
+                        'tp' => $load->total_piece ?? 0,
+                    ];
+                });
 
-
-             return [
+            return [
                 'load_id' => $item->id,
                 'load_seq' => $item->load_seq,
                 'party_name' => $item->party_data->party_en ?? null,
@@ -363,20 +353,17 @@ class Base_ser
                 'req_qty' => $item->req_qty,
                 'total_loaded' => $item->loaded,
                 'filtered_total' => $item->filter,
-                'pending_qty' =>$item->remain,
-                'last_farmer' =>$item->last_farmer,
+                'pending_qty' => $item->remain,
+                'last_farmer' => $item->last_farmer,
                 'product_id' => $item->product_id,
                 'market_place' => $item->market,
             ];
 
-            
-
             // $item->last_farmer = $item->load_list?->sortByDesc('id')->take(2)
             //                     ->map(function ($load) {
 
-            //                         $load->tp = $load->total_piece; 
+            //                         $load->tp = $load->total_piece;
             //                         $load->farmer_det = $load->farmer_data->farm_en ?? null;
-
 
             //                          return $load;
             //                     });
@@ -386,9 +373,8 @@ class Base_ser
             return $item;
         });
 
-
         // $prime_load = $prime_load->map(function($item){
-            
+
         //         $load_data = $item->load_list;
 
         //         $load_data = $load_data->map(function($load_item) use ($item){
@@ -411,7 +397,7 @@ class Base_ser
         //             $last_farmer = $item->load_list?->sortByDesc('id')->take(2)
         //                         ->map(function ($load) {
 
-        //                             $load->tp = $load->total_piece; 
+        //                             $load->tp = $load->total_piece;
         //                             $load->farmer_data->farm_en ?? null;
         //                              return $load;
         //                         });
@@ -428,40 +414,36 @@ class Base_ser
         //                 'pending_qty' =>$item->req_qty - $item->loaded,
         //                 'farmer_last' =>$last_farmer
 
-
         //             ];
 
         //             return $load_list;
         //         });
-                    
+
         // });
 
         //   \Log::info("Fetching expense today for dashboard", ['user_id' => Auth::guard('tenant')->user()->id]);
 
-        if(Auth::guard('tenant')->user()->role == 'admin'){
+        if (Auth::guard('tenant')->user()->role == 'admin') {
 
             $petty_cash = 0;
-        }else{
+        } else {
             // $petty_cash_sum = Petty_cash::where('emp_id', Auth::guard('tenant')->user()->id)->sum('amount');
 
-          
             $expense_today = Expense::with(['exp_category:id,cat'])->where('c_by', Auth::guard('tenant')->user()->id)->whereDate('created_at', date('Y-m-d'))->orderBy('id', 'desc')->get();
 
-           $bal =  Stock_ser::petty_cash_ind(['emp_id'=>Auth::guard('tenant')->user()->id]);
+            $bal = Stock_ser::petty_cash_ind(['emp_id' => Auth::guard('tenant')->user()->id]);
 
             $petty_cash = $bal['balance'];
         }
 
-
-         return [
+        return [
             'farmer_card' => $farmer_card,
             'party_card' => $party_card,
             'load_data' => $prime_load,
             'petty_cash' => $petty_cash ?? 0,
-            'expense_today' => $expense_today ?? null
+            'expense_today' => $expense_today ?? null,
         ];
 
-      
     }
 
     // function to get the employee details
@@ -474,17 +456,14 @@ class Base_ser
 
         // $petty_cash = Petty_cash::where('emp_id', $data['user_id'])->sum('amount');
 
-
         // $user_spent = $user_paid_list->sum('amount');
 
-          $data =  Stock_ser::petty_cash_ind(['emp_id'=>$user->id,'limit'=> 20]);
-        
+        $data = Stock_ser::petty_cash_ind(['emp_id' => $user->id, 'limit' => 20]);
 
-
-        if(!$user) {
-            throw new \Exception("User not found");
+        if (! $user) {
+            throw new \Exception('User not found');
         }
 
-        return ['user' => $user, 'user_balance' => $data['balance'],'cash_given' => $data['cash_given'], 'cash_spent' => $data['cash_used'],'list' => $data['list']];
+        return ['user' => $user, 'user_balance' => $data['balance'], 'cash_given' => $data['cash_given'], 'cash_spent' => $data['cash_used'], 'list' => $data['list']];
     }
 }

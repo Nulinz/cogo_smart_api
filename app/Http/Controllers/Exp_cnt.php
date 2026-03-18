@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use App\Services\Load_ser;
-use App\Services\Exp_ser;
 use App\Models\Expense;
 use App\Models\User;
+use App\Services\Exp_ser;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class Exp_cnt extends Controller
 {
@@ -20,10 +19,10 @@ class Exp_cnt extends Controller
 
         // Validation rules
         $rules = [
-            'title'     => 'required|string',
-            'exp_cat'   => 'required|string',
-            'amount'    => 'required|string',
-            'notes'     => 'nullable|string',
+            'title' => 'required|string',
+            'exp_cat' => 'required|string',
+            'amount' => 'required|string',
+            'notes' => 'nullable|string',
             // 'status'    => 'required|string|in:active,inactive',
         ];
 
@@ -37,13 +36,49 @@ class Exp_cnt extends Controller
             ], 422);
         }
 
-        try{
-             // Create Expense
-             $expense = Exp_ser::create_expense($validator->validated());
-        }catch(\Exception $e){
-            Log::error("Validation Error", ['error' => $e->getMessage()]);
+        try {
+            // Create Expense
+            $expense = Exp_ser::create_expense($validator->validated());
+        } catch (\Exception $e) {
+            Log::error('Validation Error', ['error' => $e->getMessage()]);
         }
-      
+
+        return response()->json([
+            'success' => true,
+            'data' => $expense,
+        ], 200);
+    }
+
+    // function to edit expense
+
+    public function edit_expense(Request $request)
+    {
+        // Validation rules
+        $rules = [
+            'expense_id' => 'required|string',
+            'title' => 'required|string',
+            'exp_cat' => 'required|string',
+            'amount' => 'required|string',
+            'notes' => 'nullable|string',
+            // 'status'    => 'required|string|in:active,inactive',
+        ];
+
+        // Validate the request
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // Edit Expense
+            $expense = Exp_ser::edit_expense($validator->validated());
+        } catch (\Exception $e) {
+            Log::error('Validation Error', ['error' => $e->getMessage()]);
+        }
 
         return response()->json([
             'success' => true,
@@ -55,24 +90,25 @@ class Exp_cnt extends Controller
 
     public function expense_created_list(Request $request)
     {
-       $rules = [
-           'emp_id' => 'required|string',
-       ];
-         $validator = Validator::make($request->all(), $rules);
+        $rules = [
+            'emp_id' => 'required|string',
+        ];
+        $validator = Validator::make($request->all(), $rules);
 
-         if( $validator->fails() ) {
-             return response()->json([
-                 'success' => false,
-                 'errors' => $validator->errors(),
-             ], 422);
-         }
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
         try {
             $expenses = Exp_ser::expense_created_list($validator->validated());
         } catch (\Exception $e) {
-            Log::error("Error fetching expenses", ['error' => $e->getMessage()]);
+            Log::error('Error fetching expenses', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch expenses: ' . $e->getMessage(),
+                'message' => 'Failed to fetch expenses: '.$e->getMessage(),
             ], 500);
         }
 
@@ -86,29 +122,30 @@ class Exp_cnt extends Controller
 
     public function expense_pay_out(Request $request)
     {
-       $rules = [
-           'emp_id' => 'required|string',
-           'amount' => 'required|string',
-           'pay_method' => 'required|string',
-       ];
-         $validator = Validator::make($request->all(), $rules);
+        $rules = [
+            'emp_id' => 'required|string',
+            'amount' => 'required|string',
+            'pay_method' => 'required|string',
+        ];
+        $validator = Validator::make($request->all(), $rules);
 
-         if( $validator->fails() ) {
-             return response()->json([
-                 'success' => false,
-                 'errors' => $validator->errors(),
-             ], 422);
-         }
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
         try {
             // Logic for expense pay out can be added here
 
             $exp_out = Exp_ser::expense_pay_out($validator->validated());
 
         } catch (\Exception $e) {
-            Log::error("Error processing expense pay out", ['error' => $e->getMessage()]);
+            Log::error('Error processing expense pay out', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to process expense pay out: ' . $e->getMessage(),
+                'message' => 'Failed to process expense pay out: '.$e->getMessage(),
             ], 500);
         }
 
@@ -122,30 +159,31 @@ class Exp_cnt extends Controller
 
     public function expense_status_update(Request $request)
     {
-       $rules = [
-           'expense_id' => 'required|string',
-           'status' => 'required|string|in:approved,rejected',
-       ];
-         $validator = Validator::make($request->all(), $rules);
+        $rules = [
+            'expense_id' => 'required|string',
+            'status' => 'required|string|in:approved,rejected',
+        ];
+        $validator = Validator::make($request->all(), $rules);
 
-         if( $validator->fails() ) {
-             return response()->json([
-                 'success' => false,
-                 'errors' => $validator->errors(),
-             ], 422);
-         }
-        try {
-            // Logic for expense status update can be added here
-                $exp_update = Expense::where('id', $request->expense_id)
-                    ->update([
-                        'status' => $request->status,
-                    ]);
-
-        } catch (\Exception $e) {
-            Log::error("Error updating expense status", ['error' => $e->getMessage()]);
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update expense status: ' . $e->getMessage(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        try {
+            // Logic for expense status update can be added here
+            $exp_update = Expense::where('id', $request->expense_id)
+                ->update([
+                    'status' => $request->status,
+                ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updating expense status', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update expense status: '.$e->getMessage(),
             ], 500);
         }
 
@@ -162,13 +200,13 @@ class Exp_cnt extends Controller
         try {
 
             $exp_data = Exp_ser::expense_home();
-           
 
         } catch (\Exception $e) {
-            Log::error("Error fetching expense home data", ['error' => $e->getMessage()]);
+            Log::error('Error fetching expense home data', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch expense home data: ' . $e->getMessage(),
+                'message' => 'Failed to fetch expense home data: '.$e->getMessage(),
             ], 500);
         }
 
@@ -185,26 +223,27 @@ class Exp_cnt extends Controller
 
         $rules = [
             'type' => 'required|string|in:week,month,three_month,six_month,year',
-            
-        ];
-          $validator = Validator::make($request->all(), $rules);
 
-          if( $validator->fails() ) {
-              return response()->json([
-                  'success' => false,
-                  'errors' => $validator->errors(),
-              ], 422);
-          }
+        ];
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
         try {
 
-         $exp_data = Exp_ser::expense_week($validator->validated());
+            $exp_data = Exp_ser::expense_week($validator->validated());
 
         } catch (\Exception $e) {
-            Log::error("Error fetching expense week data", ['error' => $e->getMessage()]);
+            Log::error('Error fetching expense week data', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch expense week data: ' . $e->getMessage(),
+                'message' => 'Failed to fetch expense week data: '.$e->getMessage(),
             ], 500);
         }
 
@@ -218,24 +257,25 @@ class Exp_cnt extends Controller
 
     public function expense_emp_profile(Request $request)
     {
-       $rules = [
-           'emp_id' => 'required|string',
-       ];
-         $validator = Validator::make($request->all(), $rules);
+        $rules = [
+            'emp_id' => 'required|string',
+        ];
+        $validator = Validator::make($request->all(), $rules);
 
-         if( $validator->fails() ) {
-             return response()->json([
-                 'success' => false,
-                 'errors' => $validator->errors(),
-             ], 422);
-         }
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
         try {
             $emp_profile = Exp_ser::expense_emp_profile($validator->validated());
         } catch (\Exception $e) {
-            Log::error("Error fetching expense emp profile", ['error' => $e->getMessage()]);
+            Log::error('Error fetching expense emp profile', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch expense emp profile: ' . $e->getMessage(),
+                'message' => 'Failed to fetch expense emp profile: '.$e->getMessage(),
             ], 500);
         }
 
@@ -249,21 +289,21 @@ class Exp_cnt extends Controller
 
     public function get_exp_list(Request $request)
     {
-       try{
-             $users = User::where('status', 'active')
-                    ->select('id', 'name', 'role','location')
-                    ->get()
-                    ->map(function ($user) {
-                       
-                        $petty_cash = Exp_ser::expense_emp_profile(['emp_id' => $user->id]);
-                        // $petty_cash = Expense::where('c_by', $user->id)
-                        //                 ->where('status', 'approved')
-                        //                 ->sum('amount');
-                        // $user_paid_list = Farmer_cash::where('c_by', $user->id)->sum('amount');
-                        $user->balance = $petty_cash['exp_balance'];
-    
-                        return $user;
-                    });
+        try {
+            $users = User::where('status', 'active')
+                ->select('id', 'name', 'role', 'location')
+                ->get()
+                ->map(function ($user) {
+
+                    $petty_cash = Exp_ser::expense_emp_profile(['emp_id' => $user->id]);
+                    // $petty_cash = Expense::where('c_by', $user->id)
+                    //                 ->where('status', 'approved')
+                    //                 ->sum('amount');
+                    // $user_paid_list = Farmer_cash::where('c_by', $user->id)->sum('amount');
+                    $user->balance = $petty_cash['exp_balance'];
+
+                    return $user;
+                });
 
         } catch (\Exception $e) {
             return response()->json([
@@ -282,21 +322,21 @@ class Exp_cnt extends Controller
 
     public function expense_overall_list(Request $request)
     {
-         $rules = [
-           'emp_id' => 'required|string',
-       ];
-         $validator = Validator::make($request->all(), $rules);
+        $rules = [
+            'emp_id' => 'required|string',
+        ];
+        $validator = Validator::make($request->all(), $rules);
 
-         if( $validator->fails() ) {
-             return response()->json([
-                 'success' => false,
-                 'errors' => $validator->errors(),
-             ], 422);
-         }
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-       try{
+        try {
             $emp_profile = Exp_ser::expense_emp_profile($validator->validated());
-             $exp_list = $emp_profile['exp_transaction'];
+            $exp_list = $emp_profile['exp_transaction'];
 
         } catch (\Exception $e) {
             return response()->json([
