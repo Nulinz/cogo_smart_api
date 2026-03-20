@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('m_invoice', function (Blueprint $table) {
             $table->id();
+            $table->string('inv_no')->nullable();
             $table->integer('load_id')->nullable();
             $table->integer('ext_piece')->nullable();
             $table->decimal('ext_amount', 10, 2)->nullable();

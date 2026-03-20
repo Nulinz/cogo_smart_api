@@ -311,15 +311,24 @@ class Party_ser
                 $item->inv_no = M_invoice::where('load_id', $item->load_id)->value('inv_no');
 
                 $prime_inv = M_invoice::where('load_id', $item->load_id)
-                    ->select('id', 'charges')
+                    ->select('id', 'charges', 'final_loss')
                     ->first();
 
                 $charge_out = $prime_inv->charges ?? [];
+                $loss = $prime_inv->final_loss ?? null; // your loss json
+                // \Log::info("loss for Load ID {$prime_inv->id}: ", (array) $loss);
 
                 //   \Log::info('Charge Out for Load ID '.$prime_inv->id.': ', $charge_out);
                 //   \Log::info('total_amt'.$item->total_amt);
 
                 $item->total_amt += array_sum(array_column($charge_out, 'amt'));
+
+                // Deduct loss
+                if (! empty($loss)) {
+
+                    $item->total_amt -= ($loss['amount'] ?? 0);
+                }
+
                 // $item->total_amt += array_sum($charge_out);
 
                 // $arry_sum = array_sum($charge_out);
@@ -509,7 +518,7 @@ class Party_ser
             ->when($end_date, function ($query) use ($end_date) {
                 $query->whereDate('created_at', '<=', $end_date);
             })
-            ->select('id', 'inv_no', 'load_id', 'created_at', 'charges')
+            ->select('id', 'inv_no', 'load_id', 'created_at', 'charges', 'final_loss')
             // ->select('id', 'load_id', 'bill_amt', 'created_at')
             ->get()->map(function ($item) {
 
@@ -526,6 +535,14 @@ class Party_ser
                     $inv_amount = array_sum(
                         array_map('floatval', array_column($inv_prime, 'amt'))
                     );
+                }
+
+                $loss = $item->final_loss ?? null; // your loss json
+
+                \Log::info("loss for Invoice ID {$item->id}: ", (array) $loss);
+
+                if (! empty($loss)) {
+                    $inv_amount -= ($loss['amount'] ?? 0);
                 }
 
                 // \Log::info('Charge Out for Invoice ID '.$item->id.': ', $inv_prime);
@@ -671,6 +688,12 @@ class Party_ser
                         $charge_amt = array_sum(
                             array_map('floatval', array_column($charges, 'amt'))
                         );
+                    }
+
+                    $loss = $inv->final_loss ?? null;
+
+                    if (! empty($loss)) {
+                        $charge_amt -= ($loss['amount'] ?? 0);
                     }
 
                     return $base_amount + $charge_amt;

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('stock_out', function (Blueprint $table) {
             $table->id();
-            $table->enum('cat', ['load', 'sales','inv'])->default('load');
+            $table->enum('cat', ['load', 'sales', 'inv'])->default('load');
             $table->integer('load_id')->nullable();
             $table->integer('farm_id')->nullable();
             $table->integer('product_id')->nullable();
@@ -27,8 +27,9 @@ return new class extends Migration
             $table->integer('adv')->nullable();
             $table->integer('quality')->nullable();
             $table->decimal('total_amt', 15, 2)->nullable();
-            $table->enum('status', ['active', 'inactive','clear'])->default('active');
-             $table->enum('clear_status', ['clear', 'not_clear'])->default('not_clear');
+            $table->string('inv_no')->nullable();
+            $table->enum('status', ['active', 'inactive', 'clear'])->default('active');
+            $table->enum('clear_status', ['clear', 'not_clear'])->default('not_clear');
             $table->integer('c_by')->nullable();
             $table->timestamps();
         });

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('e_shift', function (Blueprint $table) {
             $table->id();
-            $table->enum('cat', ['load', 'others','stock'])->default('load');
+            $table->enum('cat', ['load', 'others', 'stock'])->default('load');
             $table->integer('load_id')->nullable();
             $table->integer('to_load')->nullable();
             $table->integer('party_id')->nullable();
@@ -24,6 +24,7 @@ return new class extends Migration
             $table->integer('bill_piece')->nullable();
             $table->decimal('price', 10, 2)->nullable();
             $table->decimal('bill_amount', 15, 2)->nullable();
+            $table->string('inv_no')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->integer('c_by')->nullable();
             $table->timestamps();
