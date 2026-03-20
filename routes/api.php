@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Route;
 
 // update popup
 
+require __DIR__.'/admin_api.php';
+
 Route::post('/update_popup', function () {
     return response()->json(['version' => '0.0.1']);
 });
