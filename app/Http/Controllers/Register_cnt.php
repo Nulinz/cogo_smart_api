@@ -178,7 +178,7 @@ class Register_cnt extends Controller
                     ]);
                 }
 
-                $loss_cartegory = ['Shortage', 'Quality Issue', 'Discount'];
+                $loss_category = ['Shortage', 'Quality Issue', 'Discount'];
 
                 foreach ($loss_category as $loss) {
 

@@ -385,6 +385,12 @@ class Farmer_ser
         $start_date = $data['start_date'] ?? null;
         $end_date = $data['end_date'] ?? null;
 
+        Log::info('Generating Coconut Report', [
+            'farm_id' => $farm_id,
+            'start_date' => $start_date,
+            'end_date' => $end_date,
+        ]);
+
         $coconutData_in_stock = Stock_in::query()->with(['farm_data:id,farm_en'])->where('cat', 'purchase')->where('farm_id', $farm_id)
             ->when($start_date, function ($query) use ($start_date) {
                 $query->whereDate('created_at', '>=', $start_date);
@@ -432,6 +438,10 @@ class Farmer_ser
                 'created_at' => date('d-m-Y H:i:s', strtotime($item->created_at)),
             ];
         });
+
+        Log::info('Combined Coconut Data', [
+            'combined' => $report->toArray(),
+        ]);
 
         return $report;
     }
