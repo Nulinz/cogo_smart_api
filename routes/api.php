@@ -239,4 +239,6 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
 
     Route::get('farmer_qr_data', [AdminController::class, 'farmer_qr_data']);
 
+    //new 
+
 });
