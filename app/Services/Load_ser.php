@@ -124,11 +124,11 @@ class Load_ser
         $query->map(function($item){
             // $item->load_piece = 0; // Access the appended attribute to load team members
 
-                   $load_data = Self::ind_load_list(['load_id'=>$item->id]);
+            $load_data = Self::ind_load_list(['load_id'=>$item->id]);
 
             $item->load_piece = $load_data['summary']['card_billing_piece'] + $load_data['summary']['card_grace'];
 
-             $item->team_members = $item->getTeamMembersAttribute();
+            $item->team_members = $item->getTeamMembersAttribute();
 
             return $item;
         });

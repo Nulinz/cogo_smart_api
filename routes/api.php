@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Route;
 require __DIR__.'/admin_api.php';
 
 Route::post('/update_popup', function () {
-    return response()->json(['version' => '0.0.1']);
+    return response()->json(['version' => '0.0.2']);
 });
 
 // auth refrehh token

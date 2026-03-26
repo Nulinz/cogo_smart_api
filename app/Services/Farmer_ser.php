@@ -188,24 +188,24 @@ class Farmer_ser
         $load = Load::with(['load_data:id,load_seq', 'product_data:id,name_en'])->where('farmer_id', $farm_id)->get()->map(function ($item) {
             $item->table = 'e_load';
             $adv = $item->adv ?? 0;
-            $item->farmer_pend = ($item->total_amt - $adv);
+            $item->farmer_pend = ($item->total_amt);
 
             return $item;
         });
 
-        Log::info("load farmer pend", ['total' => $load->sum('farmer_pend')]);
+        // Log::info("load farmer pend", ['total' => $load->sum('farmer_pend')]);
 
         // dd($load->toArray());
 
         $stock_in = Stock_in::with(['product_data:id,name_en'])->where('cat', 'purchase')->where('farm_id', $farm_id)->get()->map(function ($item) {
             $item->table = 'stock_in';
             $adv = $item->adv ?? 0;
-            $item->farmer_pend = ($item->total_amt - $adv);
+            $item->farmer_pend = ($item->total_amt);
 
             return $item;
         });
 
-        Log::info("stock_in farmer pend", ['total' => $stock_in->sum('farmer_pend')]);
+        // Log::info("stock_in farmer pend", ['total' => $stock_in->sum('farmer_pend')]);
 
         $transactions = Farmer_cash::with(['load_data:id,load_seq', 'created_by:id,name'])->where('farm_id', $farm_id)->orderBy('created_at', 'desc')->get()->map(function ($item) {
             $item->table = 'farmer_cash';
@@ -236,9 +236,9 @@ class Farmer_ser
 
         // merge load and stock in
         $merge = $load->concat($stock_in)->sortByDesc('created_at')->values();
-        $purchase_pending = $merge->sum('farmer_pend') - ($transactions->where('type', 'purchase')->sum('amount'));
+        $purchase_pending = $merge->sum('farmer_pend') -($transactions->where('type', 'advance_deduct')->sum('amount')) - ($transactions->where('type', 'purchase')->sum('amount'));
 
-        \Log::info('Purchase Pending: ' . $purchase_pending);
+        // \Log::info('Purchase Pending: ' . $purchase_pending);
 
         if ($data->open_type === 'give') {
             $final_bal = $purchase_pending + $data->open_bal;
@@ -256,6 +256,95 @@ class Farmer_ser
         // \Log::info('Final Balance: ' . $final_bal);
 
         $transact_list = $transactions->concat($famer_open_bal)->sortByDesc('created_at')->values();
+
+        //   $loads = Load::query()
+        //   ->from((new Load)->getTable())
+        //   ->select(
+        //     'id',
+        //         'created_at',
+        //         'total_amt',
+        //         DB::raw("'e_load' as table_name")
+        //     )
+        //     ->where('farmer_id', $farm_id);
+
+        //     $stock = Stock_in::query()
+        //         ->from((new Stock_in)->getTable())
+        //         ->select(
+        //             'id',
+        //             'created_at',
+        //             'total_amt',
+        //             DB::raw("'stock_in' as table_name")
+        //         )
+        //         ->where('farm_id', $farm_id)
+        //         ->where('cat', 'purchase');
+
+        //     $union = $loads->unionAll($stock);
+
+        //     $result = DB::query()
+        //         ->fromSub($union, 'farmer_activity')
+        //         ->orderByDesc('created_at')
+        //         ->orderByDesc('id')
+        //         ->cursorPaginate(20);
+
+
+            /* ---------- LOAD RELATIONSHIP DATA ---------- */
+
+            // $loadIds = collect($result->items())
+            //     ->where('table_name','e_load')
+            //     ->pluck('id');
+
+            // $stockIds = collect($result->items())
+            //     ->where('table_name','stock_in')
+            //     ->pluck('id');
+
+
+            // $loadsData = Load::with([
+            //         'load_data:id,load_seq',
+            //         'product_data:id,name_en'
+            //     ])
+            //     ->whereIn('id', $loadIds)
+            //     ->get()
+            //     ->keyBy('id');
+
+
+            // $stockData = Stock_in::with([
+            //         'product_data:id,name_en'
+            //     ])
+            //     ->whereIn('id', $stockIds)
+            //     ->get()
+            //     ->keyBy('id');
+
+
+            /* ---------- ATTACH RELATIONS ---------- */
+
+            // $result->through(function ($item) use ($loadsData, $stockData) {
+
+            //     if ($item->table_name === 'e_load') {
+
+            //         $load = $loadsData[$item->id] ?? null;
+
+            //         if ($load) {
+            //             $item->load_seq = $load->load_data->load_seq ?? null;
+            //             $item->product = $load->product_data->name_en ?? null;
+            //         }
+
+            //     }
+
+            //     if ($item->table_name === 'stock_in') {
+
+            //         $stock = $stockData[$item->id] ?? null;
+
+            //         if ($stock) {
+            //             $item->product = $stock->product_data->name_en ?? null;
+            //         }
+
+            //     }
+
+            //     $item->farmer_pend = $item->total_amt;
+
+            //     return $item;
+            // });
+
 
         $resp = [
             'profile' => $data,
