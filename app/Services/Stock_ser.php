@@ -411,6 +411,7 @@ class Stock_ser
         }
 
         if ($data['type'] == 'completed') {
+            \Log::info('edit load summary', ['data' => $data, 'summary' => $summary]);
 
             $grace_piece = round(($data['grace_new'] / 100) * $summary->filter_total);
 

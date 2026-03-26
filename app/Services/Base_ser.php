@@ -17,6 +17,8 @@ use App\Models\User;
 use App\Models\Subscription;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class Base_ser
 {
@@ -390,10 +392,22 @@ class Base_ser
             $petty_cash = $bal['balance'];
         }
 
-     $subscription = Subscription::where('status', 'active')
-                    ->where('expiry_date', '<=', date('Y-m-d'))
-                    ->latest()
-                    ->first();
+          if (Schema::connection('tenant')->hasTable('subscription')) {
+
+                 $subscription = Subscription::where('status', 'active')->where('expiry_date', '<=', date('Y-m-d'))->latest()->first();
+
+                 if($subscription){
+                    $subscription = true;
+                 }else{
+                    $subscription = false;
+                 }
+            } 
+            else {
+                $subscription = false;
+            }
+
+   
+        
 
 
         return [
@@ -402,7 +416,7 @@ class Base_ser
             'load_data' => $prime_load,
             'petty_cash' => $petty_cash ?? 0,
             'expense_today' => $expense_today ?? null,
-            'subscription' => $subscription ? true : false,
+            'subscription' => $subscription ,
         ];
 
     }

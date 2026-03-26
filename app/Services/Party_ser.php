@@ -664,6 +664,16 @@ class Party_ser
                 })
                 ->sum('amount');
 
+            $payment_in = Party_cash::where('party_id', $party_id)
+                ->where('type', 'pay_in')
+                ->when($start_date, function ($q) use ($start_date) {
+                    $q->whereDate('created_at', '>=', $start_date);
+                })
+                ->when($end_date, function ($q) use ($end_date) {
+                    $q->whereDate('created_at', '<=', $end_date);
+                })
+                ->sum('amount');
+
             /* -----------------------------
             INVOICE TOTAL
             ------------------------------*/
@@ -732,9 +742,9 @@ class Party_ser
                 })
                 ->sum('bill_amount');
 
-            $total_invoice = $invoice_total + $sales_total + $others_total;
+            $total_invoice = ($invoice_total + $sales_total + $others_total);
 
-            $pending = $total_invoice - $payment_out;
+            $pending = $total_invoice +$payment_out - $payment_in;
 
             if ($party->party_open_type === 'give') {
                 $give_bal = $party->party_open_bal;
