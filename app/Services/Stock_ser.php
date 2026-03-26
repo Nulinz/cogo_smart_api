@@ -347,6 +347,7 @@ class Stock_ser
                 'bill_piece' => $summary->filter_total - $grace_piece,
                 'price' => $summary->filter_price,
                 'bill_amount' => $summary->filter_amount,
+                'total_amt' => $summary->filter_amount,
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
             ]);
         }
@@ -441,6 +442,7 @@ class Stock_ser
                 'bill_piece' => $summary->filter_total - $grace_piece,
                 'price' => $summary->filter_price,
                 'bill_amount' => $summary->filter_amount,
+                'total_amt' => $summary->filter_amount,
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
             ]);
         }
@@ -752,9 +754,11 @@ class Stock_ser
 
         // $inv_load_charge = collect($invoice->charges ?? []);
 
-        $invoice->inv_loading_charge += collect($invoice->charges ?? [])->sum('amt');
+        if ($invoice) {
+            $invoice->inv_loading_charge += collect($invoice->charges ?? [])->sum('amt');
+            $invoice->exists_check = M_invoice::where('load_id', $load_id)->exists() ? true : false;
+        }
 
-        $invoice->exists_check = M_invoice::where('load_id', $load_id)->exists() ? true : false;
 
         if (! $invoice) {
             throw new \Exception('Invoice not found');

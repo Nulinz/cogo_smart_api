@@ -21,7 +21,7 @@
                 <li class="nav-item dropdown">
                     <a class="nav-icon dropdown-toggle text-decoration-none" data-bs-toggle="dropdown">
                         <img src="{{ asset('images/icons/avatar.png') }}" class="avatar img-fluid rounded" />
-                        <span class="fs-5 ms-2">{{ 'name' }}</span>
+                        <span class="fs-5 ms-2">{{ Auth::user()->name }}</span>
                     </a>
 
                     <div class="dropdown-menu dropdown-menu-end">

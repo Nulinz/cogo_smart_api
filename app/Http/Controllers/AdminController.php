@@ -191,6 +191,7 @@ class AdminController extends Controller
             'name' => $request->name,
             'password' => $request->password,
             'phone' => $request->phone,
+            'role' => 'emp',
         ];
 
         try {

@@ -11,6 +11,7 @@
     <main class="content">
         <div class="container-fluid p-0">
 
+            @if(Auth::user()->role == 'admin')
             <div class="row">
 
                 <div class="col-12 col-md-4">
@@ -124,6 +125,7 @@
                 </div> -->
 
             </div>
+            @endif
 
             <div class="row">
                 <div class="col-12">

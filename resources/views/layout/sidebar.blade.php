@@ -12,7 +12,7 @@
 
          <ul class="sidebar-nav mt-3">
 
-            @if (Auth::user()->role == 'admin')
+             @if ((Auth::user()->role == 'admin') || Auth::user()->role == ('emp'))
              <li class="sidebar-item {{ Route::is('dashboard') ? 'active' : '' }}">
                  <a class='sidebar-link' href='{{ route("dashboard") }}'>
                      <img src="{{ asset('images/icons/dashboard.png') }}" width="20px"> <span class="ms-2 align-middle">Dashboard</span>
