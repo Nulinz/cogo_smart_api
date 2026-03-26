@@ -7,6 +7,10 @@ use App\Models\Master;
 use App\Models\Master_db;
 use App\Models\Sequence;
 use App\Models\User;
+use App\Models\Farmer;
+use App\Models\Party;
+use App\Models\Product;
+use App\Models\Subscription;
 use App\Services\Base_ser;
 use App\Services\Otp;
 use App\Services\Stock_ser;
@@ -910,7 +914,7 @@ class Register_cnt extends Controller
 
     public function add_kyc(Request $request)
     {
-        \Log::info('Add KYC called', ['request' => $request->allFiles()]);
+        // \Log::info('Add KYC called', ['request' => $request->allFiles()]);
         $rule = [
             'f_name' => 'required|string',
             'phone' => 'required|string',
@@ -1019,6 +1023,241 @@ class Register_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'KYC details fetch failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for subscribe to plan
+
+    public function subscription_charge(Request $request)
+    {
+        // $rule = [
+        //     'plan' => 'required|string',
+        // ];
+
+        // $validator = Validator::make($request->all(), $rule);
+
+        // if ($validator->fails()) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'errors' => $validator->errors(),
+        //     ], 422);
+        // }
+
+        try {
+            // subscription logic here
+
+            $plan = [
+                'silver' => 1000,
+                'gold' => 2000,
+                'platinum' => 3000,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $plan,
+                'message' => 'Subscribed to plan successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Subscription failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    // function for edit give and get
+
+    public function edit_give_get(Request $request)
+    {
+        $rule = [
+            'id' => 'required|string',
+            'type' => 'required|string|in:party,farmer',
+            'bal' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            
+
+            if($request->type=='farmer'){
+                $data = Farmer::where('id', $request->id)->first();
+                $data->open_bal = $request->bal;
+
+            } else {
+                $data = Party::where('id', $request->id)->first();
+                $data->party_open_bal = $request->bal;
+            }
+
+            $data->save();
+
+
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Give and Get details fetched successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            \Log::error('Give and Get details fetch failed: '.$e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Give and Get details fetch failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function fro add documents
+
+    public function add_document(Request $request)
+    {
+        $rule = [
+            'kyc_id' => 'nullable|string',
+            'aadhar_front' => 'required|file|mimes:jpg,jpeg,png,pdf',
+            'aadhar_back' => 'required|file|mimes:jpg,jpeg,png,pdf',
+            'pan_front' => 'required|file|mimes:jpg,jpeg,png,pdf',
+            'pan_back' => 'required|file|mimes:jpg,jpeg,png,pdf',
+            'apmc_front' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+            'apmc_back' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $user = Auth::guard('tenant')->user(); // ✅ Works now
+
+          $uploadPath = public_path('documents');
+
+        $files = [
+            'aadhar_front',
+            'aadhar_back',
+            'pan_front',
+            'pan_back',
+            'apmc_front',
+            'apmc_back'
+        ];
+
+        $filePaths = [];
+
+        foreach ($files as $file) {
+
+            if ($request->hasFile($file)) {
+                // \Log::info('File upload detected for '.$file);
+
+                $uploadedFile = $request->file($file);
+                $filename = $file.'_'.time().'.'.$uploadedFile->getClientOriginalExtension();
+                $uploadedFile->move($uploadPath, $filename);
+
+                $filePaths[$file] = 'documents/'.$filename;
+
+            } else {
+                $filePaths[$file] = null;
+            }
+        }
+
+            $kyc = Kyc::where('id', $request->kyc_id)->first();
+
+            // \Log::info('KYC record fetched: '.json_encode($kyc));
+             
+                $kyc->aadhar_front = $filePaths['aadhar_front'];
+                $kyc->aadhar_back = $filePaths['aadhar_back'];
+                $kyc->pan_front = $filePaths['pan_front'];
+                $kyc->pan_back = $filePaths['pan_back'];
+                $kyc->apmc_front = $filePaths['apmc_front'];
+                $kyc->apmc_back = $filePaths['apmc_back'];
+
+            $kyc->save();
+                
+          
+
+            // $document = Document::create([
+            //     'user_id' => $user->id,
+            //     'name' => $request->name,
+            //     'aadhar_front' => $filePaths['aadhar_front'],
+            //     'aadhar_back' => $filePaths['aadhar_back'],
+            //     'pan_front' => $filePaths['pan_front'],
+            //     'pan_back' => $filePaths['pan_back'],
+            //     'apmc_front' => $filePaths['apmc_front'],
+            //     'apmc_back' => $filePaths['apmc_back'],
+            //     'c_by' => $user->id,
+            // ]);
+
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document added successfully',
+                // 'data' => $document,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document addition failed: '.$e->getMessage(),
+            ], 500);
+        }
+
+    }
+
+
+    // fucntion for subscription store
+
+    public function subscription_store(Request $request)
+    {
+        $rule = [
+            'type' => 'required|string',
+            'duration' => 'required|string',
+            'amount' => 'required|numeric',
+            't_id' => 'required|string',
+            'pay_status' => 'required|string',
+            // 'expire_date' => 'required|date',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+
+                $expiry_date = now()->addMonths((int)$request->duration)->toDateString();
+
+            $subscription = Subscription::create([
+                'type' => $request->type,
+                'duration' => $request->duration,
+                'amount' => $request->amount,
+                't_id' => $request->t_id,
+                'pay_status' => $request->pay_status,
+                'expiry_date' => $expiry_date,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Subscription stored successfully',
+                'data' => $subscription,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Subscription storage failed: '.$e->getMessage(),
             ], 500);
         }
     }

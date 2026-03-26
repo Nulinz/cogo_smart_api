@@ -91,7 +91,7 @@ class Farmer_ser
         return $farm;
     }
 
-    public static function get_all_farmers()
+   public static function get_all_farmers()
     {
         $data = Farmer::where('status', 'active')->orderBy('fav', 'DESC')->get()->map(function ($farmer) {
 
@@ -167,6 +167,7 @@ class Farmer_ser
         ];
     }
 
+
     // fucntion to get farmer profile details
     public static function farmer_profile(array $data)
     {
@@ -192,6 +193,8 @@ class Farmer_ser
             return $item;
         });
 
+        Log::info("load farmer pend", ['total' => $load->sum('farmer_pend')]);
+
         // dd($load->toArray());
 
         $stock_in = Stock_in::with(['product_data:id,name_en'])->where('cat', 'purchase')->where('farm_id', $farm_id)->get()->map(function ($item) {
@@ -201,6 +204,8 @@ class Farmer_ser
 
             return $item;
         });
+
+        Log::info("stock_in farmer pend", ['total' => $stock_in->sum('farmer_pend')]);
 
         $transactions = Farmer_cash::with(['load_data:id,load_seq', 'created_by:id,name'])->where('farm_id', $farm_id)->orderBy('created_at', 'desc')->get()->map(function ($item) {
             $item->table = 'farmer_cash';
@@ -233,11 +238,15 @@ class Farmer_ser
         $merge = $load->concat($stock_in)->sortByDesc('created_at')->values();
         $purchase_pending = $merge->sum('farmer_pend') - ($transactions->where('type', 'purchase')->sum('amount'));
 
+        \Log::info('Purchase Pending: ' . $purchase_pending);
+
         if ($data->open_type === 'give') {
             $final_bal = $purchase_pending + $data->open_bal;
         } elseif ($data->open_type === 'get') {
             $final_bal = $purchase_pending - $data->open_bal;
         }
+
+        // \Log::info('Purchase Pending: ' . $final_bal);
 
         $adv_pending = ($transactions->where('type', 'advance')->sum('amount')) - ($transactions->where('type', 'advance_deduct')->sum('amount'));
 
@@ -457,7 +466,7 @@ class Farmer_ser
 
         $deducts = Farmer_cash::query()
 
-            ->with(['farm_data:id,farm_en'])
+            ->with(['farm_data:id,farm_en','farmer_bank_detail'])
             ->where('farm_id', $farm_id)
             ->where('type', '!=', 'purchase')
             // ->when($start_date && $end_date, function ($query) use ($start_date, $end_date) {
@@ -468,12 +477,22 @@ class Farmer_ser
             ->get();
 
         $report = $deducts->map(function ($item) {
+
+            // $method = $item->method;
+
+            if ($item->farmer_bank_detail) {
+                $bank = $item->farmer_bank_detail;
+            }else{
+                $bank = null;
+            }
+
             return [
                 'farm_id' => $item->farm_id,
                 'farm_en' => $item->farm_data->farm_en ?? 'Unknown',
                 'amount' => $item->amount,
                 'type' => $item->type,
-                'method' => $item->method,
+                'method' => $item->method, // You can replace this with the formatted method if needed
+                'bank'=>$bank,
                 'date' => date('d-m-Y H:i:s', strtotime($item->created_at)),
             ];
         });
@@ -491,7 +510,7 @@ class Farmer_ser
         $end_date = $data['end_date'] ?? null;
 
         $payments = Farmer_cash::query()
-            ->with(['farm_data:id,farm_en'])
+            ->with(['farm_data:id,farm_en','farmer_bank_detail'])
             ->where('farm_id', $farm_id)
             ->where('type', 'purchase')
             ->when($start_date, function ($query) use ($start_date) {
@@ -510,6 +529,7 @@ class Farmer_ser
                 'farm_en' => $item->farm_data->farm_en ?? 'Unknown',
                 'amount' => $item->amount,
                 'method' => $item->method,
+                'bank' => $item->farmer_bank_detail,
                 'type' => $item->type,
                 'date' => date('d-m-Y H:i:s', strtotime($item->created_at)),
             ];
@@ -517,5 +537,189 @@ class Farmer_ser
 
         return $report;
 
+    }
+
+    // function to get farmer payment pending report
+
+   public static function farmer_payment_pending_report(array $data)
+    {
+        $farm_id    = $data['farm_id'] ?? null;
+        // $start_date = $data['start_date'] ?? null;
+        // $end_date   = $data['end_date'] ?? null;
+
+
+
+        $query = Load::with(['farmer_data:id,farm_en', 'load_data:id,load_seq'])->where('cat', 'add');
+            // ->when($farm_id && $farm_id !== 'all', function ($query) use ($farm_id) {
+            //     $query->where('farmer_id', $farm_id);
+            // })
+            // ->when($start_date, function ($query) use ($start_date) {
+            //     $query->whereDate('created_at', '>=', $start_date);
+            // })
+            // ->when($end_date, function ($query) use ($end_date) {
+            //     $query->whereDate('created_at', '<=', $end_date);
+            // });
+
+        $loads = $query->orderBy('created_at', 'desc')->get();
+
+        $loads = $loads->map(function ($item) {
+            return [
+                'farm_id'     => $item->farmer_id,
+                'farmer_name' => $item->farmer_data->farm_en ?? 'Unknown',
+                'load_seq'    => $item->load_data->load_seq ?? null,
+                'total_amt'   => $item->total_amt,
+                'type'        => 'load',
+                'method'      => null,   // ✅ add this
+                'created_at'  => $item->created_at,
+            ];
+        });
+
+         $stock_in = Stock_in::with(['farm_data:id,farm_en', 'product_data:id,name_en'])->where('cat', 'purchase')
+            // ->when($farm_id && $farm_id !== 'all', function ($query) use ($farm_id) {
+            //     $query->where('farm_id', $farm_id);
+            // })
+            // ->when($start_date, function ($query) use ($start_date) {
+            //     $query->whereDate('created_at', '>=', $start_date);
+            // })
+            // ->when($end_date, function ($query) use ($end_date) {
+            //     $query->whereDate('created_at', '<=', $end_date);
+            // })
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'farm_id'     => $item->farm_id,
+                    'farmer_name' => $item->farm_data->farm_en ?? 'Unknown',
+                    'total_amt'   => $item->total_amt,
+                    'method'      => null,
+                    'type'        => 'stock_in',
+                    'created_at'  => $item->created_at,
+                ];
+            });
+
+        $farmer_purchase_pending = Farmer_cash::query()
+            ->with('farm_data:id,farm_en')
+            ->where('type', 'purchase');
+            // ->when($farm_id && $farm_id !== 'all', function ($query) use ($farm_id) {
+            //     $query->where('farm_id', $farm_id);
+            // })
+            // ->when($start_date, function ($query) use ($start_date) {
+            //     $query->whereDate('created_at', '>=', $start_date);
+            // })
+            // ->when($end_date, function ($query) use ($end_date) {
+            //     $query->whereDate('created_at', '<=', $end_date);
+            // });
+
+        $purchase_pending = $farmer_purchase_pending->orderBy('created_at', 'desc')->get();
+
+        $purchase_pending = $purchase_pending->map(function ($item) {
+            return [
+                'farm_id'     => $item->farm_id,   // ✅ ADD THIS
+                'farmer_name' => $item->farm_data->farm_en ?? 'Unknown',
+                'total_amt'   => $item->amount,
+                'method'      => $item->method,
+                'type'        => 'cash',
+                'created_at'  => $item->created_at,
+            ];
+        });
+
+         $farmer_advance_deduct = Farmer_cash::query()
+            ->with('farm_data:id,farm_en')
+            ->where('type', 'advance_deduct');
+            // ->when($farm_id && $farm_id !== 'all', function ($query) use ($farm_id) {
+            //     $query->where('farm_id', $farm_id);
+            // })
+            // ->when($start_date, function ($query) use ($start_date) {
+            //     $query->whereDate('created_at', '>=', $start_date);
+            // })
+            // ->when($end_date, function ($query) use ($end_date) {
+            //     $query->whereDate('created_at', '<=', $end_date);
+            // });
+
+        $farmer_advance_deduct = $farmer_advance_deduct->orderBy('created_at', 'desc')->get();
+
+        $farmer_advance_deduct = $farmer_advance_deduct->map(function ($item) {
+            return [
+                'farm_id'     => $item->farm_id,   // ✅ ADD THIS
+                'farmer_name' => $item->farm_data->farm_en ?? 'Unknown',
+                'total_amt'   => $item->amount,
+                'method'      => $item->method,
+                'type'        => 'advance_deduct',
+                'created_at'  => $item->created_at,
+            ];
+        });
+
+        // \Log::info('Purchase Pending Data', [
+        //     'purchase_pending' => $purchase_pending->toArray(),
+        // ]);
+
+
+       
+
+        $concat = $loads->concat($purchase_pending)->concat($stock_in)->concat($farmer_advance_deduct)->sortByDesc('created_at')->values();
+
+        // If farm_id = all → group by farmer
+        if ($farm_id === 'all') {
+
+        $farmers = Farmer::get()->keyBy('id');
+
+            $result = $concat->groupBy('farm_id')->map(function ($items, $farm) use ($farmers) {
+
+                $load_total = $items->where('type', 'load')->sum('total_amt');
+                $stock_in_total = $items->where('type', 'stock_in')->sum('total_amt');
+                $paid_total = $items->where('type', 'cash')->sum('total_amt');
+                $advance_deduct_total = $items->where('type', 'advance_deduct')->sum('total_amt');
+
+                $farmer_check = $farmers[$farm] ?? null;
+
+                Log::info("Calculating pending for farm_id: $farm", [
+                    'farmer_check' => $farmer_check ? $farmer_check->toArray() : null,
+                ]);
+
+                if ($farmer_check) {
+                    if ($farmer_check->open_type == 'give') {
+                        $load_total += $farmer_check->open_bal;
+                    } elseif ($farmer_check->open_type == 'get') {
+                        $load_total -= $farmer_check->open_bal;
+                    }
+                }
+
+                return [
+                    'farm_id'        => $farm,
+                    'farmer_name'    => $items->first()['farmer_name'],
+                    'total_load'     => $load_total,
+                    'total_paid'     => $paid_total,
+                    'advance_deduct_total' => $advance_deduct_total,
+                    'pending_amount' => $load_total + $stock_in_total - $paid_total - $advance_deduct_total,
+                    'type'          => $items->first()['type'], // Assuming you want to keep the type of the first item in the group
+                ];
+            })->values();
+
+        } else {
+
+            $result = $concat->sortByDesc('created_at')->map(function ($item) {
+
+                $farmer_check = Farmer::find($item['farm_id']);
+
+                
+                
+
+                if($farmer_check->open_type=='give'){
+                    $item['total_amt'] += $farmer_check->open_bal;
+                }elseif($farmer_check->open_type=='get'){
+                    $item['total_amt'] -= $farmer_check->open_bal;
+                }
+
+
+                return [
+                    'farmer_name' => $item['farmer_name'],
+                    'total_amt'   => $item['total_amt'],
+                    'method'      => $item['method'],
+                    'type'        => $item['type'],
+                    'created_at'  => date('d-m-Y H:i:s', strtotime($item['created_at'])),
+                ];
+
+            })->values();
+        }
+        return $result;
     }
 }

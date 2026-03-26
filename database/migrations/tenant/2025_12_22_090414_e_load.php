@@ -27,6 +27,7 @@ return new class extends Migration
             $table->decimal('bill_amount',15,2)->nullable();
             $table->integer('adv')->nullable();
             $table->integer('quality')->nullable();
+            $table->integer('filter')->nullable();
             $table->decimal('total_amt',10,2)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->integer('c_by')->nullable(); 

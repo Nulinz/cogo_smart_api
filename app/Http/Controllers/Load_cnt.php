@@ -82,6 +82,7 @@ class Load_cnt extends Controller
             'bill_amount' => 'required|string',
             'adv' => 'required|string',
             'quality' => 'required|string',
+            'filter' => 'nullable|string',
             'total_amt' => 'required|string',
         ];
 

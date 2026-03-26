@@ -17,6 +17,9 @@ use App\Models\Shift;
 use App\Models\Stock_in;
 use App\Models\Stock_out;
 use App\Models\Summary;
+use App\Models\Truck_capacity;
+use App\Models\User;
+use App\Models\Expense;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -52,12 +55,13 @@ class Stock_ser
                 $in_amt = $items->sum('total_amt');
                 $out_amt = $out_items->sum('total_amt');
 
-                // Remaining
-                $remaining_billing = $in_billing - $out_billing;
                 $remaining_grace = $in_grace - $out_grace;
+                // Remaining
+                $remaining_billing = ($in_billing - $out_billing)+$remaining_grace;
+
                 $remain_amt = $in_amt - $out_amt;
 
-                $avg_price = $remain_amt / $remaining_billing;
+                // $avg_price = $remaining_billing > 0 ? $remain_amt / $remaining_billing : 0;
 
                 // $avg_price = ($in_amt + $out_amt) / 2;
 
@@ -76,7 +80,7 @@ class Stock_ser
                     'product_name' => $items->first()->product_data->name_en ?? null,
                     'billing_piece' => $remaining_billing,
                     'grace_piece' => $remaining_grace,
-                    'avg_price' => round($avg_price, 2),
+                    // 'avg_price' => round($avg_price, 2),
                     'product_amount' => round(($remain_amt)),
                 ];
             })->values();
@@ -133,7 +137,7 @@ class Stock_ser
                 $remaining_grace = $in_grace - $out_grace;
                 $remain_amt = $in_amt - $out_amt;
 
-                $avg_price = $remain_amt / $remaining_billing;
+                $avg_price = $remaining_billing > 0 ? $remain_amt / $remaining_billing : 0;
 
                 // Weighted avg price (based on IN only)
                 // ✅ Correct average price
@@ -269,8 +273,8 @@ class Stock_ser
             throw new \Exception('Product ID is required');
         }
 
-        $stock_in = Stock_in::where('product_id', $product_id)->sum('total_piece');
-        $stock_out = Stock_out::where('product_id', $product_id)->sum('total_piece');
+        $stock_in = Stock_in::where('product_id', $product_id)->where('clear_status','not_clear')->sum('total_piece');
+        $stock_out = Stock_out::where('product_id', $product_id)->where('clear_status','not_clear')->sum('total_piece');
 
         $stock = $stock_in - $stock_out;
 
@@ -556,6 +560,7 @@ class Stock_ser
             'commission' => $data['commission'] ?? null,
             'final_loss' => $data['final_loss'] ?? null,
             'profit_loss' => $data['profit_loss'] ?? null,
+            'shift_loss' => $data['shift_loss'] ?? null,
             'status' => 'active',
             'c_by' => Auth::guard('tenant')->user()->id ?? null,
         ]);
@@ -762,6 +767,8 @@ class Stock_ser
 
         $trader_kyc = Kyc::where('user_id', Auth('tenant')->user()->id ?? null)->first();
 
+        \Log::info('get_invoice trader_kyc: '. json_encode($invoice, JSON_PRETTY_PRINT));
+
         return ['invoice' => $invoice, 'prime_load' => $prime_load, 'trader_kyc' => $trader_kyc];
     }
 
@@ -910,5 +917,159 @@ class Stock_ser
         ]);
 
         return $petty_cash;
+    }
+
+    // function to party profit and loss
+
+   public static function profit_loss_report(array $data)
+    {
+        $party_id  = $data['party_id'] ?? null;
+        $from_date = $data['from_date'] ?? null;
+        $to_date   = $data['to_date'] ?? null;
+
+        try {
+
+            $query = Prime_load::with(['invoices','party_data:id,party_en'])->whereHas('invoices');
+
+            // Filter by party
+            if ($party_id && $party_id !== 'all') {
+                $query->where('party_id', $party_id);
+            }
+
+            // Date filter
+            if ($from_date && $to_date) {
+                $start = Carbon::parse($from_date)->startOfDay();
+                $end   = Carbon::parse($to_date)->endOfDay();
+
+                $query->whereBetween('created_at', [$start, $end]);
+            }
+
+
+
+            $loads = $query->OrderBy('created_at', 'desc')->get();
+
+            // Flatten invoice data
+            $rows = $loads->flatMap(function ($load) {
+
+                return $load->invoices->map(function ($invoice) use ($load) {
+
+                    $loss_cat    = $invoice->final_loss['amount'] ?? 0;
+                    $profit_loss = $invoice->profit_loss ?? 0;
+
+                    return [
+                        'load_id' => $load->id,
+                        'party_id' => $load->party_id,
+                        'party_name' => $load->party_data->party_en ?? null,
+                        'load_seq' => $load->load_seq,
+                        'inv_no' => $invoice->inv_no,
+                        'invoice_id' => $invoice->id,
+                        'profit_loss' => $profit_loss,
+                        'loss_category' => $loss_cat,
+                        'net_profit_loss' => $profit_loss - $loss_cat,
+                        'created_at' => $invoice->created_at,
+                    ];
+                });
+
+            });
+
+            // If party_id = all → group by party
+            if ($party_id === 'all') {
+
+                $result = $rows->groupBy('party_id')->map(function ($items, $party) {
+
+                    return [
+                        'party_id' => $party,
+                        'total_profit_loss' => $items->sum('net_profit_loss'),
+                       'party_name' => $items->first()['party_name'] ?? null,
+                        // 'data' => $items->values()
+                    ];
+                })->values();
+
+            } else {
+
+                $result = [
+                    'party_id' => $party_id,
+                    'total_profit_loss' => $rows->sum('net_profit_loss'),
+                    'party_name' => $rows->first()['party_name'] ?? null,
+                    'data' => $rows->values()
+                ];
+            }
+
+            return [
+                'success' => true,
+                'data' => $result
+            ];
+
+        } catch (\Exception $e) {
+
+            Log::error('Error in profit_loss_report: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while fetching report.'
+            ], 500);
+        }
+    }
+
+    // function to get expense report
+
+
+    public static function expense_report(array $data)
+    {
+        $from_date = $data['start_date'] ?? null;
+        $to_date   = $data['end_date'] ?? null;
+        $emp_id     = $data['emp_id'] ?? null;
+
+        try {
+            $query = Expense::query();
+
+            // Date filter
+            if ($from_date && $to_date) {
+                $start = Carbon::parse($from_date)->startOfDay();
+                $end   = Carbon::parse($to_date)->endOfDay();
+
+                $query->whereBetween('created_at', [$start, $end]);
+            }
+
+            // Employee filter
+            if ($emp_id && $emp_id !== 'all') {
+                $query->where('c_by', $emp_id);
+            }
+
+            $expenses = $query->with(['exp_cby:id,name','exp_category:id,cat'])->where('status', 'approved')->orderBy('created_at', 'desc')->get();
+
+            // \Log::info('Expense Report Query: '. json_encode($expenses, JSON_PRETTY_PRINT));
+
+            if($emp_id === 'all') {
+                $result = $expenses->groupBy('c_by')->map(function ($items, $emp) {
+                    return [
+                        'emp_id' => $emp,
+                        'employee_name' => $items->first()->exp_cby->name ?? null,
+                        'total_expense' => $items->sum('amount'),
+                    ];
+                })->values();
+            } else {
+                $result = [
+                    'emp_id' => $emp_id,
+                    'employee_name' => $expenses->first()->exp_cby->name ?? null,
+                    'total_expense' => $expenses->sum('amount'),
+                    'data' => $expenses->values()
+                ];
+            }
+
+            return [
+                'success' => true,
+                'data' => $result
+            ];
+
+        } catch (\Exception $e) {
+
+            Log::error('Error in expense_report: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while fetching report.'
+            ], 500);
+        }
     }
 }

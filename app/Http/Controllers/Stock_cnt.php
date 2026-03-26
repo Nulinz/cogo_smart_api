@@ -235,6 +235,7 @@ class Stock_cnt extends Controller
 
     public function add_invoice(Request $request)
     {
+        // \Log::info('add_invoice data: '.json_encode($request->all(), JSON_PRETTY_PRINT));
         $rules = [
             'load_id' => 'required|string',
             'ext_piece' => 'nullable|string',
@@ -249,6 +250,8 @@ class Stock_cnt extends Controller
             'final_loss' => 'nullable|array',
             'profit_loss' => 'nullable|string',
             'product_list' => 'required|array',
+            'shift_loss' => 'nullable|string',
+
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -660,6 +663,72 @@ class Stock_cnt extends Controller
         } catch (\Exception $e) {
 
             Log::error('Error in edit_petty_cash: '.$e->getMessage());
+
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+        }
+
+        return response()->json(['success' => true, 'data' => $result], 200);
+    }
+
+    // function for party profit loss report
+
+    public function profit_loss_report(Request $request)
+    {
+        $rules = [
+            'start_date' => 'required|string',
+            'end_date' => 'required|string',
+            'party_id' => 'nullable|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+
+            $result = Stock_ser::profit_loss_report($validator->validated());
+
+        } catch (\Exception $e) {
+
+            Log::error('Error in profit_loss_report: '.$e->getMessage());
+
+            return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
+        }
+
+        return response()->json(['success' => true, 'data' => $result], 200);
+    }
+
+    // function for expense report
+
+    public function expense_report(Request $request)
+    {
+        $rules = [
+            'start_date' => 'required|string',
+            'end_date' => 'required|string',
+            'emp_id' => 'nullable|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+
+            $result = Stock_ser::expense_report($validator->validated());
+            
+
+        } catch (\Exception $e) {
+            Log::error('Error in expense_report: '.$e->getMessage());
 
             return response()->json(['success' => false, 'message' => 'An error occurred while processing your request -- '.$e->getMessage()], 500);
         }

@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Farmer;
 use App\Models\Prime_load;
+use App\Models\User;
+use App\Models\Bank;
 
 class Farmer_cash extends Model
 {
@@ -51,6 +53,11 @@ class Farmer_cash extends Model
     public function getCreatedByNameAttribute()
     {
         return $this->created_by?->name ?? 'Unknown';
+    }
+
+    public function farmer_bank_detail()
+    {
+        return $this->belongsTo(Bank::class, 'method');
     }
 
 }

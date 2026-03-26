@@ -618,7 +618,7 @@ class Party_ser
         $start_date = $data['start_date'] ?? null;
         $end_date = $data['end_date'] ?? null;
 
-        $payment_out = Party_cash::where('party_id', $party_id)->where('type', 'pay_out')
+        $payment_out = Party_cash::with(['party_bank_detail'])->where('party_id', $party_id)->where('type', 'pay_out')
             ->when($start_date, function ($query) use ($start_date) {
                 $query->whereDate('created_at', '>=', $start_date);
             })
@@ -627,7 +627,12 @@ class Party_ser
             })
             ->select('id', 'amount', 'method', 'created_at')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()->map(function ($item) {
+                
+                $item->bank = $item->party_bank_detail ?? null;
+
+                return $item;
+            });
 
         return $payment_out;
     }
@@ -639,7 +644,7 @@ class Party_ser
         $start_date = $data['start_date'] ?? null;
         $end_date = $data['end_date'] ?? null;
 
-        $parties = Party::select('id', 'party_en')->get();
+        $parties = Party::select('id', 'party_en','party_open_type','party_open_bal')->get();
 
         $report = $parties->map(function ($party) use ($start_date, $end_date) {
 
@@ -731,13 +736,28 @@ class Party_ser
 
             $pending = $total_invoice - $payment_out;
 
+            if ($party->party_open_type === 'give') {
+                $give_bal = $party->party_open_bal;
+                $pending = $pending - $give_bal;
+                // Log::info('Party ID: ' . $party->id . ' - Give Balance: ' . $give_bal);
+            } elseif ($party->party_open_type === 'get') {
+                $get_bal = $party->party_open_bal;
+                $pending = $pending + $get_bal;
+                // Log::info('Party ID: ' . $party->id . ' - Get Balance: ' . $get_bal);
+            }
+
+            // Log::info('Party ID: ' . $party->id . ' - Total Invoice: ' . $total_invoice);
+            // Log::info('Party ID: ' . $party->id . ' - Payment Out: ' . $payment_out);
+            // Log::info('Party ID: ' . $party->id . ' - Pending Amount: ' . $pending);
+              
+
             return [
-                'party_id' => $party->id,
-                'party_name' => $party->party_en,
-                'invoice_total' => $total_invoice,
-                'payment_out' => (int) $payment_out,
-                'pending_amount' => $pending,
-            ];
+                    'party_id' => $party->id,
+                    'party_name' => $party->party_en,
+                    'invoice_total' => $total_invoice,
+                    'payment_out' => (int) $payment_out,
+                    'pending_amount' => $pending,
+                ];
         });
 
         return $report->values();

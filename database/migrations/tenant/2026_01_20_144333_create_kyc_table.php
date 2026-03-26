@@ -24,6 +24,12 @@ return new class extends Migration
             $table->string('com_pan')->nullable();
             $table->text('file')->nullable();
             $table->text('signature')->nullable();
+            $table->text('aadhar_front')->nullable();
+            $table->text('aadhar_back')->nullable();
+            $table->text('pan_front')->nullable();
+            $table->text('pan_back')->nullable();
+            $table->text('apmc_front')->nullable();
+            $table->text('apmc_back')->nullable();
             $table->enum('status', ['active','inactive'])->default('active');
             $table->integer('c_by')->nullable();
             $table->timestamps();

@@ -9,6 +9,7 @@ use App\Http\Controllers\Party_cnt;
 use App\Http\Controllers\Product_cnt;
 use App\Http\Controllers\Register_cnt;
 use App\Http\Controllers\Stock_cnt;
+use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 
 // Route::post('/new', function () {
@@ -91,6 +92,8 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/edit_load_fetch', [Load_cnt::class, 'edit_load_fetch']);
     Route::post('/edit_load_item', [Load_cnt::class, 'edit_load_item']);
     Route::post('/edit_load_item_fetch', [Load_cnt::class, 'edit_load_item_fetch']);
+
+    Route::post('/edit_give_get', [Register_cnt::class, 'edit_give_get']);
 
     // load self list
     Route::post('/load_self_list', [Load_cnt::class, 'load_self_list']);
@@ -203,6 +206,7 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
 
     Route::post('/add_kyc', [Register_cnt::class, 'add_kyc']);
     Route::post('/get_kyc', [Register_cnt::class, 'get_kyc']);
+    Route::post('/add_document', [Register_cnt::class, 'add_document']);
 
     // chart for month wise profile and loss
 
@@ -218,9 +222,21 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/farmer_coconut_report', [Farmer_cnt::class, 'farmer_coconut_report']);
     Route::post('/farmer_advance_deduct_report', [Farmer_cnt::class, 'farmer_advance_deduct_report']);
     Route::post('/farmer_payment_out_report', [Farmer_cnt::class, 'farmer_payment_out_report']);
+    Route::post('/farmer_payment_pending_report', [Farmer_cnt::class, 'farmer_payment_pending_report']);
+
 
     Route::post('/party_invoice_report', [Party_cnt::class, 'party_invoice_report']);
     Route::post('/party_payment_out_report', [Party_cnt::class, 'party_payment_out_report']);
     Route::post('/party_payment_pending_report', [Party_cnt::class, 'party_payment_pending_report']);
+
+    Route::post('/profit_loss_report', [Stock_cnt::class, 'profit_loss_report']);
+    Route::post('/expense_report', [Stock_cnt::class, 'expense_report']);
+
+    Route::post('/subscription_charge', [Register_cnt::class, 'subscription_charge']);
+    Route::post('/subscription_store', [Register_cnt::class, 'subscription_store']);
+
+    // qr code 
+
+    Route::get('farmer_qr_data', [AdminController::class, 'farmer_qr_data']);
 
 });

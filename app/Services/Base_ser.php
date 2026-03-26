@@ -14,6 +14,7 @@ use App\Models\Quality;
 use App\Models\Transport;
 use App\Models\Truck_capacity;
 use App\Models\User;
+use App\Models\Subscription;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -347,6 +348,7 @@ class Base_ser
             return [
                 'load_id' => $item->id,
                 'load_seq' => $item->load_seq,
+                'veh_no' => $item->veh_no ?? null,
                 'party_name' => $item->party_data->party_en ?? null,
                 'party_location' => $item->party_data->party_location ?? null,
                 'load_date' => date('d-m-Y', strtotime($item->load_date)),
@@ -373,55 +375,7 @@ class Base_ser
             return $item;
         });
 
-        // $prime_load = $prime_load->map(function($item){
-
-        //         $load_data = $item->load_list;
-
-        //         $load_data = $load_data->map(function($load_item) use ($item){
-
-        //             $farmer = $load_item->farmer_data;
-
-        //             $load_item->farm_en = $farmer->farm_en ?? null;
-        //             $load_item->location = $farmer->location ?? null;
-
-        //             $load_item->total_loaded = Filter::where('load_id', $item->id)
-        //                                             ->where('farmer_id', $load_item->farmer_id)
-        //                                             ->sum('total');
-
-        //             $add_piece   = (optional($item->load_list)->sum('total_piece')) ?? 0;
-        //             $shift_piece = (optional($item->shift_list)->sum('total_piece')) ?? 0;
-
-        //             $item->loaded = $add_piece - $shift_piece;
-        //             $item->remain  = $item->req_qty - $item->loaded;
-
-        //             $last_farmer = $item->load_list?->sortByDesc('id')->take(2)
-        //                         ->map(function ($load) {
-
-        //                             $load->tp = $load->total_piece;
-        //                             $load->farmer_data->farm_en ?? null;
-        //                              return $load;
-        //                         });
-
-        //             $load_list =[
-        //                 'load_id' => $item->id,
-        //                 'load_seq' => $item->load_seq,
-        //                 'farmer_id' => $load_item->farmer_id,
-        //                 'farmer_name' => $farmer->farm_en ?? null,
-        //                 'location' => $farmer->location ?? null,
-        //                 'req_qty' => $item->req_qty,
-        //                 'total_loaded' => $add_piece - $shift_piece,
-        //                 'filtered_total' => $load_item->total_loaded,
-        //                 'pending_qty' =>$item->req_qty - $item->loaded,
-        //                 'farmer_last' =>$last_farmer
-
-        //             ];
-
-        //             return $load_list;
-        //         });
-
-        // });
-
-        //   \Log::info("Fetching expense today for dashboard", ['user_id' => Auth::guard('tenant')->user()->id]);
+      
 
         if (Auth::guard('tenant')->user()->role == 'admin') {
 
@@ -436,12 +390,19 @@ class Base_ser
             $petty_cash = $bal['balance'];
         }
 
+     $subscription = Subscription::where('status', 'active')
+                    ->where('expiry_date', '<=', date('Y-m-d'))
+                    ->latest()
+                    ->first();
+
+
         return [
             'farmer_card' => $farmer_card,
             'party_card' => $party_card,
             'load_data' => $prime_load,
             'petty_cash' => $petty_cash ?? 0,
             'expense_today' => $expense_today ?? null,
+            'subscription' => $subscription ? true : false,
         ];
 
     }

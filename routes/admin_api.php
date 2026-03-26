@@ -15,7 +15,7 @@ Route::post('user_add', [AdminController::class, 'user_add']);
 
 Route::post('farmer_create', [AdminController::class, 'farmers']);
 
-Route::get('farmer_qr_code', [AdminController::class, 'farmer_qr_code']);
+// Route::get('farmer_qr_code', [AdminController::class, 'farmer_qr_code']);
 Route::get('farmer_list', [AdminController::class, 'farmer_list']);
 Route::post('farmer_edit_store', [AdminController::class, 'farmer_edit_store']);
 Route::get('farmer_edit_show', [AdminController::class, 'farmer_edit_show']);

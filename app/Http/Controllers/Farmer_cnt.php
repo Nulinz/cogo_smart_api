@@ -483,4 +483,39 @@ class Farmer_cnt extends Controller
             ], 500);
         }
     }
+
+    // function for farmer payment pending report
+
+    public function farmer_payment_pending_report(Request $request)
+    {
+        $rule = [
+            'farm_id' => 'required|string',
+            // 'start_date' => 'nullable|date',
+            // 'end_date' => 'nullable|date|after_or_equal:start_date',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $report = Farmer_ser::farmer_payment_pending_report($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch farmer payment pending report: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 }

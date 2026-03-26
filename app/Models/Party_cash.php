@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Party;
+use App\Models\User;
+use App\Models\Bank;
 
 class Party_cash extends Model
 {
@@ -38,6 +41,11 @@ class Party_cash extends Model
      public function getCreatedByNameAttribute()
     {
         return $this->created_by?->name ?? 'Unknown';
+    }
+
+    public function party_bank_detail()
+    {
+        return $this->belongsTo(Bank::class, 'method');
     }
 
     // public function getCreatedAtAttribute($value)

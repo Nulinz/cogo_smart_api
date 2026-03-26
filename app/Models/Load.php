@@ -25,6 +25,7 @@ class Load extends Model
         'bill_amount',
         'adv',
         'quality',
+        'filter',
         'total_amt',
         'status',
         'c_by',

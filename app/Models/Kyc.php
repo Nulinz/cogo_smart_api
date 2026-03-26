@@ -22,6 +22,12 @@ class Kyc extends Model
         'com_pan',
         'file',
         'signature',
+        'aadhar_front',
+        'aadhar_back',
+        'pan_front',
+        'pan_back',
+        'apmc_front',
+        'apmc_back',
         'status',
         'c_by',
     ];

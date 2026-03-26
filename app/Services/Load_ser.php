@@ -92,6 +92,7 @@ class Load_ser
                 'bill_amount' => $data['bill_amount'],
                 'adv' => $data['adv'],
                 'quality' => $data['quality'],
+                'filter' => $data['filter'],
                 'total_amt' => $data['total_amt'],
                 'status' => $data['status'] ?? 'active',
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
@@ -547,6 +548,7 @@ class Load_ser
         $load_item->bill_amount = $data['bill_amount'];
         $load_item->adv = $data['adv'];
         $load_item->quality = $data['quality'];
+        $load_item->filter = $data['filter'];
         $load_item->total_amt = $data['total_amt'];
         $load_item->save();
 

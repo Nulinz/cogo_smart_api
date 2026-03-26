@@ -1,0 +1,84 @@
+/* reset.css */
+
+/* Box sizing reset */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    overflow-x: hidden;
+    width: 100%;
+}
+/* Remove default margins */
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+dl,
+dd,
+ol,
+ul,
+figure,
+hr,
+fieldset,
+legend {
+    margin: 0;
+    padding: 0;
+}
+
+/* Remove list styles */
+ul,
+ol {
+    list-style: none;
+}
+
+/* Remove default link styles */
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Remove border and set inherit font */
+button,
+input,
+optgroup,
+select,
+textarea {
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    border: none;
+    background: none;
+    padding: 0;
+    outline: none;
+}
+
+/* Remove table spacing */
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/* Set default font and background */
+body {
+    line-height: 1.5;
+    font-family: system-ui, sans-serif;
+    background-color: #fff;
+    color: #000;
+}
+
+/* Normalize images */
+/* img,
+picture {
+    max-width: 100%;
+    display: block;
+} */
