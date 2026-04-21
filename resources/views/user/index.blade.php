@@ -108,26 +108,34 @@
                                 <input type="text" name="name" class="form-control">
                             </div>
 
+                            
                             <div class="col-md-12 mb-2">
-                                <label class="col-form-label">Mobile Number <span class="fs-15 text-danger">*</span></label>
-                                <input type="text" name="phone" class="form-control" minlength="10" maxlength="10" pattern="[0-9]{10}" inputmode="numeric"
+                                <label class="col-form-label">Mobile Number <span class="fs-15 text-danger">*</span>(Enter 10-digit number)</label>
+                                <input type="text" name="phone" class="form-control mob" minlength="10" maxlength="10" pattern="[0-9]{10}" inputmode="numeric"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
                             </div>
 
                             <div class="col-md-12 mb-2">
                                 <label class="col-form-label">Password </label>
-                                <input type="password" name="password" class="form-control">
+                                <input type="password" name="password" id="add_password" class="form-control add_password">
+                                <!-- <span class="position-absolute top-50 translate-middle-y end-0 cursor-pointer pe-3" onclick="togglePassword('add_password', this)">
+                                <i class="fas fa-eye-slash"></i> -->
+                            </span>
                             </div>
 
                             <div class="col-md-12 mb-2">
                                 <label class="col-form-label">Confirm Password </label>
-                                <input type="password" name="conf_passowrd" class="form-control">
+                                <input type="password" name="conf_passowrd" id="add_conf_password" class="form-control add_conf_password">
+                                <!-- <span class="position-absolute top-50 translate-middle-y end-0 cursor-pointer pe-3" onclick="togglePassword('add_conf_password', this)">
+                                <i class="fas fa-eye-slash"></i> -->
+                            </span>
                             </div>
+                            <small id="pass_error" class="text-danger d-none">Passwords do not match</small>
 
                         </div>
 
                 </div>
-
+    
                 <div class="modal-footer px-0">
                     <div class="row w-100">
                         <div class="col-6">
@@ -136,7 +144,7 @@
                             </button>
                         </div>
                         <div class="col-6">
-                            <button type="submit" id="submit_btn" class="btn btn-primary w-100">
+                            <button type="submit" id="submit_btn_add" class="btn btn-primary w-100">
                                 Save
                             </button>
                         </div>
@@ -158,7 +166,7 @@
                 </div>
 
                 <div class="modal-body">
-                    <form  action="{{ route('user.edit.store') }}" method="POST" onsubmit="document.getElementById('submit_btn').disabled=true;">
+                    <form  action="{{ route('user.edit.store') }}" method="POST" onsubmit="document.getElementById('submit_btn').disabled=true;" >
                         @csrf
 
                         <input type="hidden" name="user_id" id="edit_user_id">
@@ -171,7 +179,7 @@
 
                             <div class="col-md-12 mb-2">
                                 <label class="col-form-label">Mobile Number <span class="fs-15 text-danger">*</span></label>
-                                <input type="text" name="phone" id="edit_phone" class="form-control" minlength="10" maxlength="10" pattern="[0-9]{10}" inputmode="numeric"
+                                <input type="text" name="phone" id="edit_phone" class="form-control mob_edit"  minlength="10" maxlength="10" pattern="[0-9]{10}" inputmode="numeric"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
                             </div>
 
@@ -197,7 +205,7 @@
                             </button>
                         </div>
                         <div class="col-6">
-                            <button type="submit" id="submit_btn" class="btn btn-primary w-100">
+                            <button type="submit" id="submit_btn_edit" class="btn btn-primary w-100">
                                 Save
                             </button>
                         </div>
@@ -227,17 +235,20 @@
             $('#datatables-reponsive_filter').appendTo('#custom-search');
 
         });
+
+     
+
         // popup data
-        $(document).on('click', '.editCourse', function() {
+        // $(document).on('click', '.editCourse', function() {
 
-            $('#discount_id').val($(this).data('id'));
-            $('select[name="course"]').val($(this).data('course'));
-            $('input[name="discount"]').val($(this).data('discount'));
-            $('input[name="description"]').val($(this).data('description'));
-            $('input[name="start_date"]').val($(this).data('start'));
-            $('input[name="end_date"]').val($(this).data('end'));
+        //     $('#discount_id').val($(this).data('id'));
+        //     $('select[name="course"]').val($(this).data('course'));
+        //     $('input[name="discount"]').val($(this).data('discount'));
+        //     $('input[name="description"]').val($(this).data('description'));
+        //     $('input[name="start_date"]').val($(this).data('start'));
+        //     $('input[name="end_date"]').val($(this).data('end'));
 
-        });
+        // });
 
         $(document).on('click', '.changeStatus', function() {
             var userId = $(this).data('id');
@@ -267,6 +278,103 @@
             });
         });
 
+        let isUserTyping = false;
+
+        $(document).on('input', '.mob, .mob_edit', function () {
+
+            // 👉 Ignore first auto-trigger (Firefox fix)
+            if (!isUserTyping) {
+                isUserTyping = true;
+                return;
+            }
+
+
+            var $input = $(this);
+            var mob = $input.val();
+
+            // 🔥 Decide which button to control
+            var button = $input.hasClass('mob_edit') 
+                ? $('#submit_btn_edit') 
+                : $('#submit_btn_add');
+
+            // Optional (only for edit)
+            var user_id = $('#edit_user_id').val();
+
+            // ❌ Disable if less than 10 digits
+            if (mob.length < 10) {
+                button.prop('disabled', true);
+                return;
+            }
+
+            $.ajax({
+                url: "{{ route('user.mob.check') }}",
+                method: 'POST',
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    mob: mob,
+                    user_id: user_id // only matters for edit
+                },
+                success: function (response) {
+
+                    if (response.exists) {
+                        alert('This mobile number is already taken.');
+
+                        $input.val('');
+                        button.prop('disabled', true);
+
+                    } else {
+                        button.prop('disabled', false);
+                    }
+                },
+                error: function () {
+                    alert('Error checking mobile number');
+                    button.prop('disabled', true);
+                }
+            });
+        });
+
+                // $(document).on('input','.mob .mob_edit', function() {
+
+                //     alert('Mobile input changed'); // ✅ debugging alert
+
+                //     var $input = $(this); // ✅ store reference
+                //     var mob = $input.val();
+                //      // ✅ get user_id from hidden field
+                //      var user_id = $('#edit_user_id').val();
+                     
+                //      console.log('Checking mobile:', mob, 'for user_id:', user_id); // ✅ debugging log
+
+                //     if (mob.length < 10) {
+                //         return;
+                //     }
+
+
+                //     $.ajax({
+                //         url: "{{ route('user.mob.check') }}",
+                //         method: 'POST',
+                //         data: {
+                //             _token: "{{ csrf_token() }}",
+                //             mob: mob,
+                //             user_id: user_id // ✅ send user id
+                //         },
+                //         success: function(response) {
+
+                //             if (response.exists) {
+                //                 alert('This mobile number is already taken.');
+
+                //                 $input.val(''); // ✅ works now
+                //                 $('#submit_btn_add').prop('disabled', true);
+
+                //             } else {
+                //                 $('#submit_btn_add').prop('disabled', false);
+                //             }
+
+                //         },
+                //         error: function(xhr) {
+                //             alert('Error checking mobile number');
+                //         }
+                //     });
+                // });
         $(document).on('click', '#editForm', function(e) {
             // e.preventDefault();
 
@@ -289,6 +397,55 @@
             //     }
             // });
         });
+
+        
+
+        $(document).on('input','.add_conf_password', function() {
+
+        //  👉 Ignore first auto-trigger (Firefox fix)
+            // if (!isUserTyping) {
+            //     isUserTyping = true;
+            //     return;
+            // }
+
+                var password = $('.add_password').val();
+                //  alert(password);
+                 var confirmPassword = $('.add_conf_password').val();
+
+                var button = $('#submit_btn_add'); // or edit based on form
+
+
+                if (password !== confirmPassword) {
+
+                    console.log('Passwords do not match');
+
+                    $('#pass_error').removeClass('d-none');
+                    button.prop('disabled', true); // ❌ disable
+
+                } else {
+
+                    $('#pass_error').addClass('d-none');
+                    button.prop('disabled', false); // ✅ enable
+                }
+
+            });
+
+
+        function togglePassword(fieldId) {
+            const input = document.getElementById(fieldId);
+            const icon = document.getElementById('togglePasswordIcon');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+        }
+
     </script>
 
 

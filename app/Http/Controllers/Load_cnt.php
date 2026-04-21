@@ -6,9 +6,67 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Services\Load_ser;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class Load_cnt extends Controller
 {
+
+    public function query(Load_ser $Load_ser)
+    {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $start = microtime(true);
+
+        $data = $Load_ser->get_load_list(['status'=>'completed']);
+        
+        // $data = $farmer_ser->get_all_farmers();
+
+        $end = microtime(true);
+
+        // Collect queries
+        $queries = collect(DB::getQueryLog())->map(function ($q) {
+                return [
+                    'sql' => $q['query'],
+                    'time_ms' => $q['time'],
+                ];
+            });
+
+            // Slow queries (top 5)
+            $slowQueries = $queries
+                ->sortByDesc('time_ms')
+                ->take(5)
+                ->values();
+
+            // Duplicate queries (grouped)
+            $duplicateQueries = $queries
+                ->groupBy('sql')
+                ->map(function ($items, $sql) {
+                    return [
+                        'sql' => $sql,
+                        'count' => $items->count(),
+                        'total_time_ms' => $items->sum('time_ms'),
+                    ];
+                })
+                ->filter(fn($q) => $q['count'] > 1) // only duplicates
+                ->sortByDesc('count')
+                ->take(5)
+                ->values();
+
+            return response()->json([
+                // 'data' => $data, // enable if needed
+                'debug' => [
+                    'query_count' => $queries->count(),
+                    'total_query_time_ms' => round($queries->sum('time_ms'), 2),
+                    'total_time_ms' => round(($end - $start) * 1000, 2),
+
+                    // 🔥 Advanced insights
+                    'slow_queries' => $slowQueries,
+                    'duplicate_queries' => $duplicateQueries,
+                ]
+            ]);
+    }
     //function for create load
 
     public function create_load(Request $request)
@@ -121,13 +179,39 @@ class Load_cnt extends Controller
     // function to get load list
     public function get_load_list(Request $request)
     {
+        $status = $request->status ?? 'completed'; // Get the 'status' query parameter
+        $cursor = $request->cursor;
+        $db = $request->tenant_db; 
+        $keyword = $request->keyword; // Get the 'keyword' query parameter for search
+
         try {
-            $loads = Load_ser::get_load_list();
+            // $loads = Load_ser::get_load_list($status);
+
+            if (!empty($keyword)) {
+                $loads = Load_ser::get_load_list($request->all());
+            } else {
+                if ($cursor) {
+                    $loads = Load_ser::get_load_list($request->all());
+
+                } else {
+
+                    // ✅ Cache key based on status
+                    $cacheKey = "load_list_first_page_{$status}_{$db}";
+
+                    $loads = Cache::remember($cacheKey, 5, function () use ($request) {
+                        return Load_ser::get_load_list($request->all());
+                    });
+                }
+            }
+
+            // ✅ If cursor exists → DO NOT use cache
+        
 
             return response()->json([
                 'success' => true,
-                'data' => $loads['ongoing'],
-                'completed' => $loads['completed'],
+                'data' => $loads['data'],
+                'next_url' => $loads['next_cursor'],
+                'previous_url' => $loads['previous_cursor'],
             ], 200);
 
         } catch (\Exception $e) {
@@ -209,8 +293,8 @@ class Load_cnt extends Controller
         // Method implementation here
 
         $rule = [
-            'cat' => 'required|string|in:load,manual,purchase',
-            'load_id' => 'nullable|string',
+            'cat' => 'required|string|in:load,purchase',
+            'load_id' => 'nullable',
             'farmer_id' => 'required|string',
             'product_id' => 'required|string',
             'total_piece' => 'required|string',
@@ -226,8 +310,10 @@ class Load_cnt extends Controller
         ];
         $validator = Validator::make($request->all(), $rule);
 
+         \Log::info( 'Add purchase request data: ' . json_encode($request->all(), JSON_PRETTY_PRINT));
+
         if ($validator->fails()) {
-            \Log::info( 'Add purchase request data: ' . json_encode($request->all(), JSON_PRETTY_PRINT));
+           
             \Log::error('Validation failed in add_purchase: ', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
@@ -245,6 +331,7 @@ class Load_cnt extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+            \Log::error('Error in add_purchase: '.$e->getMessage().' line:'. $e->getLine());
             return response()->json([
                 'success' => false,
                 'message' => 'Adding stock in entry failed: '.$e->getMessage(),
@@ -257,7 +344,7 @@ class Load_cnt extends Controller
     public function add_sales(Request $request)
     {
         $rule = [
-           'cat' => 'required|string|in:load,sales',
+            'cat' => 'required|string|in:load,sales',
             'load_id' => 'nullable|string',
             'party_id' => 'required|string',
             'product_id' => 'required|string',
@@ -462,6 +549,40 @@ class Load_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch load self list: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    // function ind load data
+
+    public function ind_load_data(Request $request)
+    {
+        $rule = [
+            'load_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $load_data = Load_ser::ind_load_data($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $load_data,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch individual load data: '.$e->getMessage(),
             ], 500);
         }
     }

@@ -49,6 +49,7 @@
                                             <th>Nick Name</th>
                                             <th>Mobile Number</th>
                                             <th>Location</th>
+                                            <th>Register Date</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
@@ -60,6 +61,7 @@
                                                 <td>{{ $farmer->nick }}</td>
                                                 <td>{{ $farmer->phone }}</td>
                                                 <td>{{ $farmer->location }}</td>
+                                                <td>{{ $farmer?->created_at ? date('d-m-Y', strtotime($farmer->created_at)) : 'N/A'; }}</td>
                                                 <td>
                                                     <div class="d-flex gap-2">
                                                         <button class="editCourse" data-id="{{ $farmer->id }}" data-name="{{ $farmer->name }}"  data-whatsapp="{{ $farmer->whats_up }}"

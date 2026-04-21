@@ -38,15 +38,23 @@ Route::post('/check_mobile_register', [Register_cnt::class, 'check_mobile']);
 
 Route::post('/forgot_password', [Register_cnt::class, 'forgot_password']);
 
-Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
+Route::middleware(['tenant.db'])->group(function () {
+
+// query checking
+
+    Route::post('/query_check',[Farmer_cnt::class, 'query']);
 
     // dashboard data
 
     Route::post('/dashboard', [Base_cnt::class, 'dashboard']);
+    Route::post('/dashboard_load', [Base_cnt::class, 'dashboard_load']);
+
+     Route::post('/old_password', [Base_cnt::class, 'old_password']);
 
     Route::post('/update_password', [Register_cnt::class, 'update_password']);
 
     Route::post('/check_mobile', [Register_cnt::class, 'check_mobile']);
+     Route::post('/permission_user', [Register_cnt::class, 'permission_user']);
 
     // toggle favorite for farmer and party
     Route::post('/toggle_fav', [Register_cnt::class, 'toggle_fav']);
@@ -56,6 +64,7 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/get_farm_details', [Farmer_cnt::class, 'get_farmer_details']);
     Route::post('/get_farm_list', [Farmer_cnt::class, 'get_farmer_list']);
     Route::post('/farmer_profile', [Farmer_cnt::class, 'farmer_profile']);
+    Route::post('/farmer_profile_load', [Farmer_cnt::class, 'farmer_profile_load']);
     Route::post('/farmer_inactive', [Farmer_cnt::class, 'farmer_inactive']);
     Route::post('/farmer_status_update', [Farmer_cnt::class, 'farmer_status_update']);
 
@@ -92,6 +101,9 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/edit_load_fetch', [Load_cnt::class, 'edit_load_fetch']);
     Route::post('/edit_load_item', [Load_cnt::class, 'edit_load_item']);
     Route::post('/edit_load_item_fetch', [Load_cnt::class, 'edit_load_item_fetch']);
+
+    // ind load  data
+    Route::post('/ind_load_data', [Load_cnt::class, 'ind_load_data']);
 
     Route::post('/edit_give_get', [Register_cnt::class, 'edit_give_get']);
 
@@ -134,6 +146,10 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/stock_home', [Stock_cnt::class, 'stock_home']);
     Route::post('/stock_transaction_list', [Stock_cnt::class, 'stock_transaction_list']);
     Route::post('/get_stock_product', [Stock_cnt::class, 'get_stock_product']);
+    Route::post('/stock_home_purchase', [Stock_cnt::class, 'stock_home_purchase']);
+    Route::post('/stock_home_sales', [Stock_cnt::class, 'stock_home_sales']);
+     Route::post('/stock_edit_store', [Stock_cnt::class, 'stock_edit_store']);
+     Route::post('/stock_edit_data', [Stock_cnt::class, 'stock_edit_data']);
 
     // stock clear
 
@@ -163,6 +179,7 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     Route::post('/add_coconut', [Base_cnt::class, 'add_coconut']);
     Route::post('/get_coconut_emp', [Base_cnt::class, 'get_coconut_emp']);
     Route::post('/get_coconut_list', [Base_cnt::class, 'get_coconut_list']);
+    Route::post('/delete_coconut', [Base_cnt::class, 'delete_coconut']);
 
     // load summary
     Route::post('/add_load_summary', [Stock_cnt::class, 'add_load_summary']);
@@ -178,6 +195,7 @@ Route::middleware(['tenant.db', 'jwt.auth'])->group(function () {
     // invoices for party..
 
     Route::post('/invoice_pdf', [Stock_cnt::class, 'invoice_pdf']);
+    Route::post('/invoice_data', [Stock_cnt::class, 'invoice_data']);
 
     // add petty cash
 

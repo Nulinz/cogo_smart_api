@@ -6,9 +6,70 @@ use App\Models\Farmer;
 use App\Services\Farmer_ser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class Farmer_cnt extends Controller
 {
+
+ // method to create or update party
+
+    public function query(Farmer_ser $farmer_ser)
+    {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $start = microtime(true);
+
+       $data = $farmer_ser->farmer_profile_load([]);
+
+        $end = microtime(true);
+
+        // Collect queries
+        $queries = collect(DB::getQueryLog())->map(function ($q) {
+                return [
+                    'sql' => $q['query'],
+                    'time_ms' => $q['time'],
+                ];
+            });
+
+            // Slow queries (top 5)
+            $slowQueries = $queries
+                ->sortByDesc('time_ms')
+                ->take(5)
+                ->values();
+
+            // Duplicate queries (grouped)
+            $duplicateQueries = $queries
+                ->groupBy('sql')
+                ->map(function ($items, $sql) {
+                    return [
+                        'sql' => $sql,
+                        'count' => $items->count(),
+                        'total_time_ms' => $items->sum('time_ms'),
+                    ];
+                })
+                ->filter(fn($q) => $q['count'] > 1) // only duplicates
+                ->sortByDesc('count')
+                ->take(5)
+                ->values();
+
+            return response()->json([
+                // 'data' => $data, // enable if needed
+                'debug' => [
+                    'query_count' => $queries->count(),
+                    'total_query_time_ms' => round($queries->sum('time_ms'), 2),
+                    'total_time_ms' => round(($end - $start) * 1000, 2),
+
+                    // 🔥 Advanced insights
+                    'slow_queries' => $slowQueries,
+                    'duplicate_queries' => $duplicateQueries,
+                ]
+            ]);
+    }
+
+
     // Controller methods here
 
     public function create_farm(Request $request)
@@ -31,6 +92,8 @@ class Farmer_cnt extends Controller
             'ifsc' => 'nullable|string',
             'upi' => 'nullable|string',
             'adv' => 'nullable|string',
+            'open_type' => 'required|string|in:give,get',
+            'open_bal' => 'required|string',
 
         ];
 
@@ -103,7 +166,26 @@ class Farmer_cnt extends Controller
     public function get_farmer_list(Request $request)
     {
         try {
-            $farmers = Farmer_ser::get_all_farmers();
+            $db = $request->tenant_db;
+            $cursor = $request->cursor;
+            $keyword = $request->keyword;
+
+           // 🔍 If search → skip cache
+            if (!empty($keyword)) {
+                $farmers = Farmer_ser::get_all_farmers_opt($request->all());
+            } else {
+
+                $cacheKey = "farmer_list_{$db}";
+
+                if (!$cursor) {
+                    $farmers = Cache::store('redis')->remember($cacheKey, 5, function () use ($request) {
+                        return Farmer_ser::get_all_farmers_opt($request->all());
+                    });
+                } else {
+                    // pagination → no cache
+                    $farmers = Farmer_ser::get_all_farmers_opt($request->all());
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -113,9 +195,11 @@ class Farmer_cnt extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch farmers list: '.$e->getMessage(),
+                'message' => 'Failed to fetch farmers list: ' . $e->getMessage(),
+                'line' => $e->getLine(),
             ], 500);
         }
+       
     }
     // function for farmer profile
 
@@ -150,6 +234,41 @@ class Farmer_cnt extends Controller
             ], 500);
         }
     }
+
+     // function for farmer profile
+
+    public function farmer_profile_load(Request $request)
+    {
+        $rule = [
+            'farm_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        try {
+            $profile_load = Farmer_ser::farmer_profile_load($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $profile_load,
+            ], 200);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching farmer profile: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch farmer profile: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
 
     // function for farmer advance pending
 
@@ -298,9 +417,16 @@ class Farmer_cnt extends Controller
 
     public function farmer_inactive(Request $request)
     {
+        $keyword = $request->keyword;
+
 
         try {
-            $farmer = Farmer_ser::farmer_inactive();
+
+            $farmer = Farmer_ser::farmer_inactive($request->all());
+            // if (!empty($keyword)) {
+            //     $farmer = Farmer_ser::farmer_inactive_opt($request->all());
+            // } else {    
+            // }
 
             return response()->json([
                 'success' => true,

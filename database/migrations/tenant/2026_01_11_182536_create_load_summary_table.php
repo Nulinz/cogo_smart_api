@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('load_summary', function (Blueprint $table) {
             $table->id();
-            $table->integer('load_id')->nullable();
+            $table->unsignedBigInteger('load_id')->nullable()->index();
             $table->integer('filter_total')->nullable();
             $table->integer('filter_billing')->nullable();
             $table->decimal('filter_price', 10, 2)->nullable();

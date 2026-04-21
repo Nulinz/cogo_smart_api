@@ -82,10 +82,10 @@ abstract class Controller
         $validator = Validator::make($request->all(), [
             'load_pref' => 'required|string',
             'load_suf' => 'required|string',
-            'farmer_pref' => 'required|string',
-            'farmer_suf' => 'required|string',
-            'party_pref' => 'required|string',
-            'party_suf' => 'required|string',
+            'farmer_pref' => 'nullable|string',
+            'farmer_suf' => 'nullable|string',
+            'party_pref' => 'nullable|string',
+            'party_suf' => 'nullable|string',
         ]);
 
         if( $validator->fails() ) {
@@ -96,19 +96,34 @@ abstract class Controller
         }
 
         try{
-            $seq = Sequence::create(
+            // $seq = Sequence::create(
                
-                [
-                    'load_pref' => $request->load_pref,
-                    'load_suf' => $request->load_suf,
-                    'farmer_pref' => $request->farmer_pref,
-                    'farmer_suf' => $request->farmer_suf,
-                    'party_pref' => $request->party_pref,
-                    'party_suf' => $request->party_suf,
-                    'status' => 'active',
-                    'c_by' => Auth::guard('tenant')->user()->id,
-                ]
-            );
+            //     [
+            //         'load_pref' => $request->load_pref,
+            //         'load_suf' => $request->load_suf,
+            //         'farmer_pref' => $request->farmer_pref,
+            //         'farmer_suf' => $request->farmer_suf,
+            //         'party_pref' => $request->party_pref,
+            //         'party_suf' => $request->party_suf,
+            //         'status' => 'active',
+            //         'c_by' => Auth::guard('tenant')->user()->id,
+            //     ]
+            // );
+
+            $seq = Sequence::updateOrCreate(
+                    [
+                        'c_by' => Auth::guard('tenant')->user()->id
+                    ],
+                    [
+                        'load_pref' => $request->load_pref,
+                        'load_suf' => $request->load_suf,
+                        'farmer_pref' => $request->farmer_pref ?? null,
+                        'farmer_suf' => $request->farmer_suf ?? null,
+                        'party_pref' => $request->party_pref ?? null,
+                        'party_suf' => $request->party_suf ?? null,
+                        'status' => 'active',
+                    ]
+                );
 
             return response()->json([
                 'success' => true,

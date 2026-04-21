@@ -6,10 +6,87 @@ use App\Models\Party;
 use App\Services\Party_ser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class Party_cnt extends Controller
 {
     // method to create or update party
+
+
+    public function construct()
+    {
+        $token = JWTAuth::getToken();
+        $payload = JWTAuth::manager()->getJWTProvider()->decode($token);
+        $db = $payload['db_name'] ?? null;
+        $sub = $payload['sub'] ?? null;
+    }
+
+    public function query(Party_ser $party_ser)
+    {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $start = microtime(true);
+
+        $data = $party_ser->party_profile(['party_id'=> 4]);
+        // $data = $party_ser->get_all_party();
+
+        $end = microtime(true);
+
+        // Collect queries
+        $queries = collect(DB::getQueryLog())->map(function ($q) {
+                return [
+                    'sql' => $q['query'],
+                    'time_ms' => $q['time'],
+                ];
+            });
+
+            // Slow queries (top 5)
+            $slowQueries = $queries
+                ->sortByDesc('time_ms')
+                ->take(5)
+                ->values();
+
+            // Duplicate queries (grouped)
+            $duplicateQueries = $queries
+                ->groupBy('sql')
+                ->map(function ($items, $sql) {
+                    return [
+                        'sql' => $sql,
+                        'count' => $items->count(),
+                        'total_time_ms' => $items->sum('time_ms'),
+                    ];
+                })
+                ->filter(fn($q) => $q['count'] > 1) // only duplicates
+                ->sortByDesc('count')
+                ->take(5)
+                ->values();
+
+            return response()->json([
+                // 'data' => $data, // enable if needed
+                'debug' => [
+                    'query_count' => $queries->count(),
+                    'total_query_time_ms' => round($queries->sum('time_ms'), 2),
+                    'total_time_ms' => round(($end - $start) * 1000, 2),
+
+                    // 🔥 Advanced insights
+                    'slow_queries' => $slowQueries,
+                    'duplicate_queries' => $duplicateQueries,
+                ]
+            ]);
+
+        // $queries = DB::getQueryLog();
+
+        // return response()->json([
+        //     // 'data' => $data,
+        //     'debug' => [
+        //         'query_count' => count($queries),
+        //         'query_time_ms' => round(collect($queries)->sum('time'), 2),
+        //         'total_time_ms' => round(($end - $start) * 1000, 2),
+        //     ]
+        // ]);
+    }
 
     public function create_party(Request $request)
     {
@@ -30,6 +107,8 @@ class Party_cnt extends Controller
             'party_acc_no' => 'nullable|string',
             'party_ifsc' => 'nullable|string',
             'party_upi' => 'nullable|string',
+            'party_open_type' => 'required|string|in:give,get',
+            'party_open_bal' => 'required|string',
 
         ];
 
@@ -98,7 +177,35 @@ class Party_cnt extends Controller
     public function get_party_list(Request $request)
     {
         try {
-            $parties = Party_ser::get_all_party();
+            // \Log::info('Fetching party list');
+           
+            // $parties = Cache::store('database')->remember("party_list", 10, function () {
+            //     return Party_ser::get_all_party_opt();
+            // });
+
+            $db = $request->tenant_db;       // tenant DB
+            $cursor = $request->cursor;         // pagination cursor
+            $keyword = $request->keyword;       // search keyword
+
+            $cacheKey = "party_list_{$db}";
+
+                if (!empty($keyword)) {
+                   $parties = Party_ser::get_all_party_opt($request->all());
+                } else {
+
+                    if (!$cursor) {
+
+                        $parties = Cache::store('redis')->remember($cacheKey, 5, function ()  use ($request) {
+                            return Party_ser::get_all_party_opt($request->all());
+                        });
+
+                    } else {
+                        $parties = Party_ser::get_all_party_opt($request->all());
+                    }  
+                   
+                }
+
+           
 
             return response()->json([
                 'success' => true,
@@ -106,6 +213,7 @@ class Party_cnt extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+            \Log::error('Error fetching party list: '.$e->getMessage().' at line '.$e->getLine());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch party list: '.$e->getMessage(),
@@ -118,9 +226,10 @@ class Party_cnt extends Controller
 
     public function party_inactive(Request $request)
     {
+        $keyword = $request->keyword;
 
         try {
-            $party = Party_ser::party_inactive();
+            $party = Party_ser::party_inactive($request->all());
 
             return response()->json([
                 'success' => true,
@@ -194,15 +303,31 @@ class Party_cnt extends Controller
         }
 
         try {
-            $party = Party_ser::party_profile($request->all());
+            $party_id = $request->party_id;
+              $db = $request->tenant_db;
+            $cursor = $request->cursor;
 
+            $cacheKey = "party_profile_{$party_id}_{$db}";
+             if (!$cursor) {
+                $party = Cache::store('redis')->remember(
+                    $cacheKey,
+                    30,
+                    function () use ($request) {
+                        return Party_ser::party_profile($request->all());
+                    }
+                );
+            } else {
+                 $party = Party_ser::party_profile($request->all());
+
+            }
+           
             return response()->json([
                 'success' => true,
                 'data' => $party,
             ], 200);
 
         } catch (\Exception $e) {
-            \Log::error('Party profile error: '.$e->getMessage());
+            \Log::error('Party profile error: '.$e->getMessage().' at line '.$e->getLine());
 
             return response()->json([
                 'success' => false,

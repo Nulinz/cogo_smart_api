@@ -18,6 +18,9 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->integer('c_by')->nullable();
             $table->timestamps();
+
+             // ✅ composite index (must be separate)
+            $table->index(['farm_id', 'c_by']);
         });
     }
 

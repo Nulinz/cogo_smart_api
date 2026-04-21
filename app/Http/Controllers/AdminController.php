@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -25,12 +26,23 @@ class AdminController extends Controller
     $farmer = Admin_farmer::all();
 
     $farmer_count = $farmer->count();
-    $farmer_monthly_count = $farmer->where('created_at', '>=', now()->subDays(30))->count();
+    // $farmer_monthly_count = $farmer->where('created_at', '>=', now()->subDays(30))->count();
+    $farmer_monthly_count = Admin_farmer::whereMonth('created_at', Carbon::now()->month)
+    ->whereYear('created_at', Carbon::now()->year)
+    ->count();
 
     $traders = DB::table('users')->where('type', 'reg')->get();
 
     $trader_count = $traders->count();
-    $trader_monthly_count = $traders->where('created_at', '>=', now()->subDays(30))->count();
+    // $trader_monthly_count = $traders->where('created_at', '>=', now()->subDays(30))->count();
+
+    $trader_monthly_count = DB::table('users')
+    ->where('type', 'reg')
+    ->whereMonth('created_at', Carbon::now()->month)
+    ->whereYear('created_at', Carbon::now()->year)
+    ->count();
+
+
 
        
     $subscription_summary = [];
@@ -62,19 +74,30 @@ class AdminController extends Controller
 
                     $subscription_summary[$type]++;
 
+                    $total_subscription_amount += $sub->amount ?? 0;
+                // 👉 parse date once
+                    $createdAt = Carbon::parse($sub->created_at);
 
-                    // monthly count
-                    if (strtotime($sub->created_at) >= strtotime(now()->subDays(30))) {
-
-                        if (!isset($subscription_monthly[$type])) {
-                            $subscription_monthly[$type] = 0;
-                        }
-
-                        $subscription_monthly[$type]++;
-                        $monthly_subscription_amount += $sub->amount ?? 0;
+                    // ✅ current month check
+                    if ($createdAt->isCurrentMonth()) {
+                        
+                            // Log::info("currrent month",['created' => $createdAt]);
+                            if (!isset($subscription_monthly[$type])) {
+                                $subscription_monthly[$type] = 0;
+                            }
+                        
+                            
+                            $monthly_subscription_amount += $sub->amount;
+                            
+                            // Log::info("monthly", [
+                            //     'type' => $type,
+                            //     'added' => $sub->amount,
+                            //     'total' => $monthly_subscription_amount
+                            //     ]);
+                                
+                            $subscription_monthly[$type]++;
                     }
 
-                    $total_subscription_amount += $sub->amount ?? 0;
                 }
             }
 
@@ -118,6 +141,8 @@ class AdminController extends Controller
     return $trader;
 });
 
+    \Log::info("sub summary: " . json_encode($subscription_monthly, JSON_PRETTY_PRINT));
+
 
         return view('dashboard.index',[
                 'farmer_count' => $farmer_count ?? 0,
@@ -151,7 +176,7 @@ class AdminController extends Controller
             // return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $admin_user = Admin_user::where('phone', $request->phone)->where('password', $request->password)->first();
+        $admin_user = Admin_user::where('phone', $request->phone)->where('password', $request->password)->where('status','active')->first();
 
         // \Log::info('Admin login attempt', ['phone' => $request->phone]);
 // 
@@ -553,6 +578,7 @@ class AdminController extends Controller
 
             $trader->subscription_plan = $subscription?->type ? $subscription->type.' - '.$subscription->duration.' months' : 'N/A';
             $trader->subscription_end = $subscription?->expiry_date ? date('d-m-Y', strtotime($subscription->expiry_date)): 'N/A';
+            $trader->register_date = $trader?->created_at ? date('d-m-Y', strtotime($trader->created_at)) : 'N/A';
 
             return $trader;
         });
@@ -581,57 +607,121 @@ class AdminController extends Controller
          // Assuming you have a Trader model and traders table
         $traders = DB::table('users')->where('type', 'reg')->get();
 
-       
         $traders = $traders->map(function ($trader) use ($type) {
 
-           $subscription_data = null;
+                $subscription_data = collect();
 
-            try {
+                try {
+                    $database = $trader->db_name;
 
-                $database = $trader->db_name;
+                    Tenant_db::connect($database);
 
-                // switch tenant database
-                Tenant_db::connect($database);
+                    if (Schema::connection('tenant')->hasTable('subscription')) {
+
+                        $subscription_data = DB::connection('tenant')
+                            ->table('subscription')
+                            ->where('type', $type)
+                            ->get()
+                            ->map(function ($sub) {
+                                return [
+                                    'plan' => $sub->type,
+                                    'duration' => $sub->duration,
+                                    'amount' => $sub->amount,
+                                    'expiry_date' => date('d-m-Y', strtotime($sub->expiry_date)),
+                                    'created_at' => date('d-m-Y', strtotime($sub->created_at)),
+                                ];
+                            });
+                    }
+
+                } catch (\Exception $e) {}
+
+                // ❌ skip traders with no subscriptions
+                if ($subscription_data->isEmpty()) {
+                    return null;
+                }
+
+                return [
+                    'id' => $trader->id,
+                    'name' => $trader->name,
+                    'l_name' => $trader->l_name,
+                    'phone' => $trader->phone,
+                    'subscriptions' => $subscription_data
+                ];
+
+        })->filter()->values(); // ✅ removes null traders
+
+       
+        // $traders = $traders->map(function ($trader) use ($type) {
+
+        //    $subscription_data = null;
+
+        //     try {
+
+        //         $database = $trader->db_name;
+
+        //         // switch tenant database
+        //         Tenant_db::connect($database);
 
                 
 
-                // check table exists
-                if (Schema::connection('tenant')->hasTable('subscription')) {
+        //         // check table exists
+        //         if (Schema::connection('tenant')->hasTable('subscription')) {
 
-                    $subscription_data = DB::connection('tenant')
-                        ->table('subscription')
-                        ->where('type', $type)
-                        ->latest('id')
-                        ->first();
+        //             $subscription_data = DB::connection('tenant')
+        //                 ->table('subscription')
+        //                 ->where('type', $type)
+        //                 ->get();
 
-                    // Log::info('Subscription data found for trader', ['sub' => $subscription_data, 'trader' => $trader->name]);
-                }
-                else{
-                    // Log::warning('Subscription table not found in tenant database', ['database' => $database]);
-                }
+        //             // Log::info('Subscription data found for trader', ['sub' => $subscription_data, 'trader' => $trader->name]);
+        //         }
+        //         else{
+        //             // Log::warning('Subscription table not found in tenant database', ['database' => $database]);
+        //         }
 
-            } catch (\Exception $e) {
-                // $subscription = null;
-                // optional: log error
-                // \Log::error($e->getMessage());
-            }
+        //     } catch (\Exception $e) {
+        //         // $subscription = null;
+        //         // optional: log error
+        //         // \Log::error($e->getMessage());
+        //     }
 
            
-            if ($subscription_data) {
-                //  Log::info('Subscription data for trader', ['sub' => $subscription_data, 'trader' => $trader->name]);
-                $trader->subscription_plan = $subscription_data->type . ' - ' . $subscription_data->duration . ' months';
-                $trader->subscription_end = date('d-m-Y', strtotime($subscription_data->expiry_date));
+        //     if ($subscription_data) {
 
-                 return $trader; // keep trader
-            }
 
-             return null; // remove trader if no subscription
+        //         return [
 
-                // return $subscription ? $trader : null;
+        //             'id' => $trader->id,
+        //             'name' => $trader->name,
+        //             'phone' => $trader->phone,
+        //             'subscriptions' => $subscription_data->map(function ($sub) {
+        //                 return [
+        //                     'plan' => $sub->type,
+        //                     'duration' => $sub->duration,
+        //                     'amount' => $sub->amount,
+        //                     'expiry_date' => $sub->expiry_date ? date('d-m-Y', strtotime($sub->expiry_date)) : 'N/A',
+        //                     'created_at' => $sub->created_at ? date('d-m-Y', strtotime($sub->created_at)) : 'N/A',
+        //                 ];
+        //             }),
 
-        })->filter();
+        //         ];
+        //         //  Log::info('Subscription data for trader', ['sub' => $subscription_data, 'trader' => $trader->name]);
+        //         // $trader->subscription_plan = $subscription_data->type . ' - ' . $subscription_data->duration . ' months';
+        //         // $trader->subscription_end = date('d-m-Y', strtotime($subscription_data->expiry_date));
+        //         // $trader->subscription_amount = $subscription_data->amount;
+        //         // $trader->subscription_created = date('d-m-Y', strtotime($subscription_data->created_at));
+
+        //          return $trader; // keep trader
+        //     }
+
+        //      return null; // remove trader if no subscription
+
+        //         // return $subscription ? $trader : null;
+
+        // })->filter();
 
         //  dd($type);
+
+        // Log::info('Traders with subscription type'.json_encode($traders,JSON_PRETTY_PRINT), ['traders' => $traders]);
 
         
         return view('subscription.profile',[
@@ -715,5 +805,68 @@ class AdminController extends Controller
         //   $exists = $query->exists();
 
           return response()->json(['exists' => $query]);
+      }
+
+      // function for user phone check
+
+      public function user_mob_check(Request $request)
+      {
+            $mob = $request->mob;
+            $user_id = $request->user_id;
+
+            $query = Admin_user::where('phone', $mob);
+
+            if ($user_id) {
+                // ✅ exclude current user
+                $query->where('id', '!=', $user_id);
+            }
+
+            $exists = $query->exists();
+
+            return response()->json([
+                'exists' => $exists
+            ]);
+      }
+
+      // function for user password change
+
+      public function user_password_change(Request $request)
+      {
+            // $rule = [
+            //     'old_password' => 'required',
+            //     'new_password' => 'nullable',
+            // ];
+
+            // $validator = Validator::make($request->all(), $rule);
+
+            // if ($validator->fails()) {
+            //     return response()->json(['errors' => $validator->errors()], 422);
+            // }
+            
+            $user = Admin_user::find(auth()->id());
+
+            // dd($request->all(), $user);
+
+            if (! $user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            if($request->has('new_password')){
+                
+                $user->password = $request->new_password;
+
+                try {
+
+                    $user->save();      
+
+                    return redirect()->back()->with('message', 'Password changed successfully!');
+
+                } catch (\Exception $e) {
+
+                    return redirect()->back()->with('error', 'Failed to change password: ' . $e->getMessage());
+                    
+                }
+                
+            }
       }
 }

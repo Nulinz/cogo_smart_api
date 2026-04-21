@@ -13,13 +13,15 @@ return new class extends Migration
     {
         Schema::create('e_party', function (Blueprint $table) {
             $table->id();
-            $table->integer('party_id')->nullable();
+            $table->unsignedBigInteger('party_id')->nullable();
             $table->enum('type', ['pay_in', 'pay_out'])->default('pay_in');
             $table->decimal('amount', 10, 2)->default(0);
             $table->string('method', 100)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->integer('c_by')->nullable();
+            $table->unsignedBigInteger('c_by')->nullable();
             $table->timestamps();
+
+            $table->index(['party_id', 'c_by']);
         });
     }
 

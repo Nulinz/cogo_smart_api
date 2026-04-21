@@ -8,6 +8,7 @@ use App\Services\Exp_ser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 
 class Exp_cnt extends Controller
 {
@@ -290,20 +291,60 @@ class Exp_cnt extends Controller
     public function get_exp_list(Request $request)
     {
         try {
-            $users = User::where('status', 'active')
-                ->select('id', 'name', 'role', 'location')
-                ->get()
-                ->map(function ($user) {
+            $keyword = $request->keyword ?? null;
+            $db = $request->tenant_db;
 
-                    $petty_cash = Exp_ser::expense_emp_profile(['emp_id' => $user->id]);
-                    // $petty_cash = Expense::where('c_by', $user->id)
-                    //                 ->where('status', 'approved')
-                    //                 ->sum('amount');
-                    // $user_paid_list = Farmer_cash::where('c_by', $user->id)->sum('amount');
-                    $user->balance = $petty_cash['exp_balance'];
+            // 🔍 SEARCH → NO CACHE
+            if (!empty($keyword)) {
 
-                    return $user;
+                $users = User::where('status', 'active')
+                    ->where(function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%");
+                        
+                    })
+                    ->select('id', 'name', 'role', 'location')
+                    ->get()
+                    ->map(function ($user) {
+
+                        $petty_cash = Exp_ser::expense_emp_profile(['emp_id' => $user->id]);
+                        $user->balance = $petty_cash['exp_balance'];
+
+                        return $user;
+                    });
+
+            } else {
+
+                // 📦 CACHE → NORMAL LIST
+                $cacheKey = "Expense_employee_list_{$db}";
+
+                $users = Cache::store('redis')->remember($cacheKey, 5, function () {
+
+                    return User::where('status', 'active')
+                        ->select('id', 'name', 'role', 'location')
+                        ->get()
+                        ->map(function ($user) {
+
+                            $petty_cash = Exp_ser::expense_emp_profile(['emp_id' => $user->id]);
+                            $user->balance = $petty_cash['exp_balance'];
+
+                            return $user;
+                        });
                 });
+            }
+            // $users = User::where('status', 'active')
+            //     ->select('id', 'name', 'role', 'location')
+            //     ->get()
+            //     ->map(function ($user) {
+
+            //         $petty_cash = Exp_ser::expense_emp_profile(['emp_id' => $user->id]);
+            //         // $petty_cash = Expense::where('c_by', $user->id)
+            //         //                 ->where('status', 'approved')
+            //         //                 ->sum('amount');
+            //         // $user_paid_list = Farmer_cash::where('c_by', $user->id)->sum('amount');
+            //         $user->balance = $petty_cash['exp_balance'];
+
+            //         return $user;
+            //     });
 
         } catch (\Exception $e) {
             return response()->json([
@@ -324,6 +365,9 @@ class Exp_cnt extends Controller
     {
         $rules = [
             'emp_id' => 'required|string',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'cursor' => 'nullable|string', // ✅ ADD THIS
         ];
         $validator = Validator::make($request->all(), $rules);
 
@@ -348,6 +392,8 @@ class Exp_cnt extends Controller
         return response()->json([
             'success' => true,
             'data' => $exp_list,
+            'next_url' => $emp_profile['next_cursor'] ?? null, // ✅ ADD THIS
+            // 'prev_url' => $exp_list['prev_cursor'] ?? null, // ✅ ADD THIS
         ], 200);
     }
 }

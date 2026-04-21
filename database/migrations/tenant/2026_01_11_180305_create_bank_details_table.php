@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('bank_details', function (Blueprint $table) {
             $table->id();
-            $table->enum('type', ['farmer', 'party','emp']);
+            $table->enum('type', ['farmer', 'party','emp'])->index();
             $table->integer('f_id')->nullable();
             $table->string('acc_type',30)->nullable();
             $table->string('b_name',100)->nullable();

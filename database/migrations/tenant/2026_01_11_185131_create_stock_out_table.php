@@ -16,7 +16,7 @@ return new class extends Migration
             $table->enum('cat', ['load', 'sales', 'inv'])->default('load');
             $table->integer('load_id')->nullable();
             $table->integer('farm_id')->nullable();
-            $table->integer('product_id')->nullable();
+            $table->unsignedBigInteger('product_id')->nullable()->index();
             $table->integer('total_piece')->nullable();
             $table->integer('grace_piece')->nullable();
             $table->decimal('grace_per', 10, 2)->default(0);
@@ -29,9 +29,11 @@ return new class extends Migration
             $table->decimal('total_amt', 15, 2)->nullable();
             $table->string('inv_no')->nullable();
             $table->enum('status', ['active', 'inactive', 'clear'])->default('active');
-            $table->enum('clear_status', ['clear', 'not_clear'])->default('not_clear');
+            $table->enum('clear_status', ['clear', 'not_clear'])->default('not_clear')->index();
             $table->integer('c_by')->nullable();
             $table->timestamps();
+
+            $table->index(['product_id', 'cat']);
         });
     }
 

@@ -23,6 +23,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+
 
 class Register_cnt extends Controller
 {
@@ -541,6 +544,7 @@ class Register_cnt extends Controller
             'phone' => 'required|string',
             'role' => 'required|string',
             'location' => 'required|string',
+            'cash_permission'=>'required|string|in:yes,no',
 
         ];
 
@@ -553,14 +557,16 @@ class Register_cnt extends Controller
             ], 422);
         }
 
-        DB::beginTransaction();
+        // DB::beginTransaction();
 
         try {
+             Tenant_db::connect($db); // switch back to tenant DB
             $user = User::create([
                 'name' => $request->name,
                 'phone' => $request->phone,
                 'role' => $request->role,
                 'location' => $request->location,
+                'cash_permission' => $request->cash_permission,
                 'password' => '123456',
                 'status' => 'active',
             ]);
@@ -589,7 +595,7 @@ class Register_cnt extends Controller
                 'data' => $user,
             ], 200);
         } catch (\Exception $e) {
-            DB::rollBack();
+            // DB::rollBack();
             Tenant_db::connect($db); // ensure DB reset
 
             return response()->json([
@@ -614,18 +620,49 @@ class Register_cnt extends Controller
         //     ], 422);
         // }
         try {
-            $users = User::query()
-                ->where('status', 'active')
-                ->select('id', 'name', 'role', 'location')
-                ->get()
-                ->map(function ($user) {
 
-                    $data = Stock_ser::petty_cash_ind(['emp_id' => $user->id]);
+            $db = $request->tenant_db;
 
-                    $user->balance = $data['balance'];
+           $keyword = $request->keyword;
 
-                    return $user;
+            // 🔍 If search → skip cache
+            if (!empty($keyword)) {
+
+                $users = User::query()
+                    ->where('status', 'active')
+                    ->where(function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%");
+                    })
+                    ->select('id', 'name', 'role', 'location')
+                    ->get()
+                    ->map(function ($user) {
+
+                        $data = Stock_ser::petty_cash_ind(['emp_id' => $user->id]);
+                        $user->balance = $data['balance'];
+
+                        return $user;
+                    });
+
+            } else {
+
+                // 📦 Normal → use cache
+                $cacheKey = "employee_list_{$db}";
+
+                $users = Cache::store('redis')->remember($cacheKey, 5, function () {
+
+                    return User::query()
+                        ->where('status', 'active')
+                        ->select('id', 'name', 'role', 'location')
+                        ->get()
+                        ->map(function ($user) {
+
+                            $data = Stock_ser::petty_cash_ind(['emp_id' => $user->id]);
+                            $user->balance = $data['balance'];
+
+                            return $user;
+                        });
                 });
+            }
 
         } catch (\Exception $e) {
             return response()->json([
@@ -646,6 +683,7 @@ class Register_cnt extends Controller
     {
         $rule = [
             'user_id' => 'required|string',
+            'type' => 'nullable|string|in:details_list',
         ];
         $validator = Validator::make($request->all(), $rule);
         if ($validator->fails()) {
@@ -665,6 +703,7 @@ class Register_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Database connection failed: '.$e->getMessage(),
+                'line' => $e->getLine(),
             ], 500);
         }
 
@@ -735,6 +774,7 @@ class Register_cnt extends Controller
             'name' => 'required|string',
             'role' => 'required|string|in:admin,emp,manager',
             'location' => 'required|string',
+            'cash_permission' => 'required|string|in:yes,no',
 
         ];
 
@@ -752,6 +792,7 @@ class Register_cnt extends Controller
                 'name' => $request->name,
                 'role' => $request->role,
                 'location' => $request->location,
+                'cash_permission' => $request->cash_permission,
             ]);
 
             return response()->json([
@@ -785,7 +826,7 @@ class Register_cnt extends Controller
         }
 
         try {
-            $user = User::where('id', $request->emp_id)->select('id', 'name', 'location', 'role')->first();
+            $user = User::where('id', $request->emp_id)->select('id', 'name', 'location', 'role', 'cash_permission')->first();
 
             return response()->json([
                 'success' => true,
@@ -1046,12 +1087,14 @@ class Register_cnt extends Controller
 
         try {
             // subscription logic here
+         Tenant_db::main(); // switch to main DB Tenant_db::main(); //
+          $plan = DB::table('subscription_admin')->where('status', 'active')->get();
 
-            $plan = [
-                'silver' => 1000,
-                'gold' => 2000,
-                'platinum' => 3000,
-            ];
+            // $plan = [
+            //     'silver' => 1000,
+            //     'gold' => 2000,
+            //     'platinum' => 3000,
+            // ];
 
             return response()->json([
                 'success' => true,
@@ -1258,6 +1301,42 @@ class Register_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Subscription storage failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    // function for permission user
+
+    public function permission_user(Request $request)
+    {
+        $rule = [
+            'user_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+
+            $user = User::where('id', $request->user_id)->first();
+
+            return response()->json([
+                'success' => true,
+                'data' => $user,
+                'message' => 'User data retrieved successfully',
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'User permission update failed: '.$e->getMessage(),
             ], 500);
         }
     }

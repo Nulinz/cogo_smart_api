@@ -32,8 +32,8 @@
                                     <img src="{{ asset('images/icons/avatar.png') }}" class="img-fluid me-1 rounded" width="35px" height="35px" id="profileImage">
                                 </div>
                                 <div class="flex-grow-1 ps-2">
-                                    <a>Name</a>
-                                    <div class="sidebar-user-subtitle">Type</div>
+                                    <a>{{ Auth::user()->name }}</a>
+                                    <div class="sidebar-user-subtitle">{{ Auth::user()->role }}</div>
                                 </div>
                             </div>
                         </div>
@@ -60,37 +60,38 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form action="" method="post" onsubmit="return checkPasswordMatch(this)">
+                <form action="{{ route('user.password.change') }}" method="post">
                     @csrf
 
                     <!-- Old Password -->
-                    <div class="col-md-12 mb-3">
+                    <!-- <div class="col-md-12 mb-3">
                         <label class="form-label fw-bold">Old Password</label>
-                        <input type="password" name="old_password" id="old_password" class="form-control" minlength="6" required placeholder="Enter Old Password">
-                    </div>
+                        <input type="password" name="old_password" id="change_password" class="form-control" autocomplete="off" minlength="6" required placeholder="Enter Old Password">
+                    </div> -->
 
                     <!-- New Password -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">New Password</label>
                         <div class="position-relative">
-                            <input type="password" class="form-control py-2" name="password" id="new_password" required oninput="checkPasswordMatch()">
-                            <span class="position-absolute top-50 translate-middle-y end-0 cursor-pointer pe-3" onclick="togglePassword('new_password', this)">
+                            <input type="password" class="form-control py-2" name="new_password" id="add_password" autocomplete="off" required>
+                            <span class="position-absolute top-50 translate-middle-y end-0 cursor-pointer pe-3" onclick="togglePassword('add_password', this)">
                                 <i class="fas fa-eye-slash"></i>
                             </span>
                         </div>
-                        <div id="passwordRulesError" class="text-danger mt-1" style="display:none;"></div>
+                        <!-- <div id="passwordRulesError" class="text-danger mt-1" style="display:none;"></div> -->
                     </div>
 
                     <!-- Confirm Password -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">Confirm Password</label>
                         <div class="position-relative">
-                            <input type="password" class="form-control py-2" name="password_confirmation" id="confirm_password" required oninput="checkPasswordMatch()">
-                            <span class="position-absolute top-50 translate-middle-y end-0 cursor-pointer pe-3" onclick="togglePassword('confirm_password', this)">
+                            <input type="password" class="form-control py-2" name="" id="add_conf_password" required>
+                            <span class="position-absolute top-50 translate-middle-y end-0 cursor-pointer pe-3" onclick="togglePassword('add_conf_password', this)">
                                 <i class="fas fa-eye-slash"></i>
                             </span>
                         </div>
-                        <div id="passwordError" class="text-danger mt-1" style="display:none;"></div>
+                        <small id="pass_error_ch" class="text-danger d-none">Passwords do not match</small>
+                        <!-- <div id="passwordError" class="text-danger mt-1" style="display:none;"></div> -->
                     </div>
 
                     <div class="d-flex gap-2 border-0 p-0">
@@ -132,3 +133,4 @@
         </div>
     </div>
 </div>
+

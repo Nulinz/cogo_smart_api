@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use App\Models\Bank;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class Base_cnt extends Controller
 {
@@ -270,16 +271,95 @@ class Base_cnt extends Controller
         }
     }
 
+    // function for delete coconut availability
+
+    public function delete_coconut(Request $request)
+    {
+        $rules = [
+            'coconut_id'  => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $coconut = Base_ser::delete_coconut($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Coconut availability deleted successfully',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete coconut availability: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
     // dashboard data
 
     public function dashboard(Request $request)
     {
+        // \Log::info('Dashboard data request received', ['request' => $request->all()]);
         try {
             $dashboardData = Base_ser::dashboard_data($request->all());
+
+            // \Log::info('Dashboard data fetched successfully', ['dashboardData' => $dashboardData]);
 
             return response()->json([
                 'success' => true,
                 'data' => $dashboardData,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch dashboard data: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+      // dashboard load data
+
+    public function dashboard_load(Request $request)
+    {
+         $cursor = $request->cursor;
+         $db = $request->tenant_db; 
+        // \Log::info('Dashboard data request received', ['request' => $request->all()]);
+        try {
+
+         if ($cursor) {
+            // $loads = Load_ser::get_load_list($status);
+            $dashboardData = Base_ser::dashboard_load($request->all());
+
+        } else {
+
+            // ✅ Cache key based on status
+            $cacheKey = "dashboard_load_list_first_page_ongoing_{$db}";
+
+            $dashboardData = Cache::remember($cacheKey, 5, function () use ($request) {
+                return Base_ser::dashboard_load($request->all());;
+            });
+        }
+
+            
+
+            // \Log::info('Dashboard data fetched successfully', ['dashboardData' => $dashboardData]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $dashboardData['data'],
+                'next_url' => $dashboardData['next_cursor'] ?? null,
+                'prev_url' => $dashboardData['previous_cursor'] ?? null,
             ], 200);
 
         } catch (\Exception $e) {
@@ -446,6 +526,40 @@ class Base_cnt extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch bank details: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // function for old password
+
+    public function old_password(Request $request)
+    {
+        $rule = [
+            'user_id' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rule);
+
+        if( $validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try{
+            $user = Auth::guard('tenant')->user();
+
+            return response()->json([
+                'data' => $user->password,
+                'success' => true,
+                'message' => 'Old password is retrieved successfully',
+            ], 200);
+
+        }catch(\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to verify old password: '.$e->getMessage(),
             ], 500);
         }
     }

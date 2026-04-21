@@ -132,18 +132,28 @@
                                         <th>Mobile Number</th>
                                         <th>Subscription Plan</th>
                                         <th>Subscription End</th>
+                                        <th>Subscription Amount</th>
+                                        <th>Subscription Created</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($traders as $index => $trader)
-                                        <tr>
-                                            <td>{{ $loop->iteration }}</td>
-                                            <td>{{ $trader->name }}</td>
-                                            <td>{{ $trader->l_name }}</td>
-                                            <td>{{ $trader->phone }}</td>
-                                            <td>{{ $trader->subscription_plan ?? 'N/A' }}</td>
-                                            <td>{{ $trader->subscription_end ?? 'N/A' }}</td>
-                                        </tr>
+                                   @php $i = 1; @endphp
+                                   @foreach ($traders as $trader)
+
+                                        @foreach ($trader['subscriptions'] as $sub)
+                                            <tr>
+                                                <td>{{ $i++; }}</td>
+                                                <td>{{ $trader['name'] }}</td>
+                                                <td>{{ $trader['l_name'] }}</td>
+                                                <td>{{ $trader['phone'] }}</td>
+
+                                                <td>{{ $sub['plan'] }} - {{ $sub['duration'] }} months</td>
+                                                <td>{{ $sub['expiry_date'] }}</td>
+                                                <td>{{ $sub['amount'] }}</td>
+                                                <td>{{ $sub['created_at'] }}</td>
+                                            </tr>
+                                        @endforeach
+
                                     @endforeach
 
                                 </tbody>

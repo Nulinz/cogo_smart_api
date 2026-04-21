@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('petty_cash', function (Blueprint $table) {
             $table->id();
-            $table->integer('emp_id')->nullable();
+            $table->unsignedBigInteger('emp_id')->nullable()->index();
             $table->enum('type', ['petty', 'settle'])->default('petty');
             $table->decimal('amount', 10, 2)->nullable();   
             $table->string('method', 250)->nullable();

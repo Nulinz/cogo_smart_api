@@ -106,145 +106,230 @@ class Stock_ser
 
     }
 
-    public static function stock_home_check()
-    {
+    public static function stock_home_purchase(){
 
         $stock_in = Stock_in::with('product_data:id,name_en')->where('clear_status', 'not_clear')->get();
-        $stock_out = Stock_out::where('clear_status', 'not_clear')->get();
+        // $stock_out = Stock_out::where('clear_status', 'not_clear')->get();
 
-        $stockOutByProduct = $stock_out->groupBy('product_id');
+            // $stockOutByProduct = $stock_out->groupBy('product_id');
 
-        $products = $stock_in
-            ->groupBy('product_id')
-            ->map(function ($items, $productId) use ($stockOutByProduct) {
+            $products = $stock_in
+                ->groupBy('product_id')
+                ->map(function ($items, $productId) {
 
-                // Stock IN totals
-                $in_billing = $items->sum('bill_piece');
-                $in_grace = $items->sum('grace_piece');
+                    // Stock IN totals
+                    $in_billing = $items->sum('bill_piece');
+                    $in_grace = $items->sum('grace_piece');
+                    $in_price = $items->sum('price');
+                    $in_amt = $items->sum('total_amt');
+                    $in_total = $items->sum('total_piece');
 
-                // Stock OUT totals (safe)
-                $out_items = $stockOutByProduct->get($productId, collect());
+                    return [
+                        'product_id' => $productId,
+                        'product_name' => $items->first()->product_data->name_en ?? null,
+                        'billing_piece' => $in_total,
+                        'grace_piece' => $in_grace,
+                        // 'avg_price' => round($avg_price, 2),
+                        'product_amount' => round(($in_amt)),
+                    ];
+                })->values();
 
-                $out_billing = $out_items->sum('bill_piece');
-                $out_grace = $out_items->sum('grace_piece');
+            $total_value = $products->sum('product_amount');
 
-                // total amt of the bill
-                $in_amt = $items->sum('total_amt');
-                $out_amt = $out_items->sum('total_amt');
+        //     // ✅ CALL TRANSACTION LIST HERE
+        //     $transactions = self::stock_transaction_list(['type' => 'purchase']);
 
-                // Remaining
-                $remaining_billing = $in_billing - $out_billing;
-                $remaining_grace = $in_grace - $out_grace;
-                $remain_amt = $in_amt - $out_amt;
+        //    // take only latest 5 transactions
+        //    $stock_in_list = collect($transactions['stock_data'])
+        //                 ->where('type', 'in')   // 👈 filter here
+        //                 // ->sortByDesc('created_at') // 👈 optional if not already sorted
+        //                 // ->take(5)
+        //                 ->values();
 
-                $avg_price = $remaining_billing > 0 ? $remain_amt / $remaining_billing : 0;
+            $stock_data = Clear_stock::all();
 
-                // Weighted avg price (based on IN only)
-                // ✅ Correct average price
-                // $avg_price = $in_billing > 0
-                //     ? $items->sum(fn ($i) => $i->total_piece * $i->price) / $in_billing
-                //     : 0;
+            $stock_sum_clear = $stock_data->sum(function ($item) {
+                return $item->bill_piece + $item->grace_piece;
+            });
 
-                return [
-                    'product_id' => $productId,
-                    'product_name' => $items->first()->product_data->name_en ?? null,
-                    'billing_piece' => $remaining_billing,
-                    'grace_piece' => $remaining_grace,
-                    'avg_price' => round($avg_price, 2),
-                    'product_amount' => round($remain_amt),
-                ];
-            })->values();
+            return ['total_card' => $total_value, 'products' => $products, 'transactions' => $stock_in_list ?? null, 'clear_stock_count' => $stock_sum_clear];
 
-        $total_value = $products->sum('product_amount');
+        
+    }
 
-        // ✅ CALL TRANSACTION LIST HERE
-        $transactions = self::stock_transaction_list([]);
+    public static function stock_home_sales(array $data){
 
-        // take only latest 5 transactions
-        $latest_transactions = collect($transactions['stock_data'])
-            // ->sortByDesc('created_at')
-            ->take(5)
-            ->values();
 
-        $stock_data = Clear_stock::all();
 
-        $stock_sum_clear = $stock_data->sum(function ($item) {
-            return $item->bill_piece + $item->grace_piece;
-        });
+        $stock_out = Stock_out::with('product:id,name_en')->where('product_id', $data['product_id'])->where('clear_status', 'not_clear')->get();
+        // $stock_out = Stock_out::where('clear_status', 'not_clear')->get();
 
-        return ['total_card' => $total_value, 'products' => $products, 'transactions' => $latest_transactions, 'clear_stock_count' => $stock_sum_clear];
+            // $stockOutByProduct = $stock_out->groupBy('product_id');
 
+            $products = $stock_out
+                ->groupBy('product_id')
+                ->map(function ($items, $productId) {
+
+                    // Stock OUT totals
+                    $out_billing = $items->sum('bill_piece');
+                    $out_grace = $items->sum('grace_piece');
+                    $out_price = $items->sum('price');
+                    $out_amt = $items->sum('total_amt');
+                    $out_total = $items->sum('total_piece');
+
+                    return [
+                        'product_id' => $productId,
+                        'product_name' => $items->first()->product->name_en ?? null,
+                        'billing_piece' => $out_total,
+                        'grace_piece' => $out_grace,
+                        // 'avg_price' => round($avg_price, 2),
+                        'product_amount' => round(($out_amt)),
+                    ];
+                })->values();
+
+            $total_value = $products->sum('product_amount');
+
+            // ✅ CALL TRANSACTION LIST HERE
+        //     $transactions = self::stock_transaction_list(['']);
+
+        //     // take only latest 5 transactions
+        //    $stock_out_list = collect($transactions['stock_data'])
+        //                 ->where('type', 'out')   // 👈 filter here
+        //                 // ->sortByDesc('created_at') // 👈 optional if not already sorted
+        //                 // ->take(5)
+        //                 ->values();
+
+            $stock_data = Clear_stock::all();
+
+            $stock_sum_clear = $stock_data->sum(function ($item) {
+                return $item->bill_piece + $item->grace_piece;
+            });
+
+            return ['total_card' => $total_value, 'products' => $products, 'transactions' => $stock_out_list ?? null, 'clear_stock_count' => $stock_sum_clear];
+
+        
     }
 
     // function to get the stock transsaction in and out
 
+    // public static function stock_transaction_list(array $data)
+    // {
+    //     $stock_in_query = Stock_in::with('product_data:id,name_en', 'farm_data:id,farm_en', 'load_data:id,load_seq')->where('clear_status', 'not_clear')->orderBy('created_at', 'desc')->get()->map(function ($item) {
+    //         $item->table = 'in';
+
+    //         return $item;
+    //     });
+
+    //     $stock_out_query = Stock_out::with('product:id,name_en', 'party:id,party_en', 'load_data:id,load_seq')->where('clear_status', 'not_clear')->orderBy('created_at', 'desc')->get()->map(function ($item) {
+    //         $item->table = 'out';
+
+    //         return $item;
+    //     });
+
+    //     $merge = $stock_in_query->concat($stock_out_query)->sortByDesc(function ($item) {
+    //         return Carbon::createFromFormat('d-m-Y H:i:s', $item->created_at);
+    //     })
+    //         ->values();
+
+    //     $stock_data = $merge->map(function ($item) {
+
+    //         $type = $item->table;
+
+    //         if ($type == 'in') {
+    //             $item->user = $item->farm_data;
+    //             // $item->load_det = $item->load_data->load_seq ?? null;
+    //         } else {
+    //             $item->user = $item->party;
+    //             // $item->load_det = $item->load->load_seq ?? null;
+    //         }
+
+    //         return [
+    //             'id' => $item->id,
+
+    //             'product_name' => $item->table === 'in'
+    //                                 ? $item->product_data->name_en ?? null
+    //                                 : $item->product->name_en ?? null,
+
+    //             'total_piece' => $item->total_piece ?? 0,
+
+    //             'bill_piece' => $item->bill_piece ?? 0,
+
+    //             'grace_piece' => $item->grace_piece ?? 0,
+
+    //             'party_name' => $item->table === 'out'
+    //                                 ? $item->party->party_en ?? null
+    //                                 : null,
+
+    //             'farmer_name' => $item->table === 'in'
+    //                                 ? $item->farm_data->farm_en ?? null
+    //                                 : null,
+
+    //             'load_seq' => $item->load_data->load_seq ?? null,
+
+    //             'billing_amount' => $item->bill_amount ?? 0,
+
+    //             'type' => $item->table,
+
+    //             'created_at' => $item->created_at,
+    //         ];
+    //         //    return $item;
+
+    //     });
+
+    //     return [
+    //         'stock_data' => $stock_data,
+
+    //     ];
+    // }
+
+      
     public static function stock_transaction_list(array $data)
     {
-        $stock_in_query = Stock_in::with('product_data:id,name_en', 'farm_data:id,farm_en', 'load_data:id,load_seq')->orderBy('created_at', 'desc')->get()->map(function ($item) {
-            $item->table = 'in';
+        $type = $data['type']; // sale | purchase | all
+        $cursor = $data['cursor'] ?? null;
 
-            return $item;
-        });
+        // ✅ APPLY TYPE FILTER
+        if ($type === 'sales') {
+           $stockOut =  Stock_out::with(['product:id,name_en', 'party:id,party_en', 'load_data:id,load_seq'])
+                ->where('clear_status', 'not_clear')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id') // 🔥 IMPORTANT
+                ->cursorPaginate(10, ['*'], 'cursor', $cursor);
+            $query = $stockOut;
 
-        $stock_out_query = Stock_out::with('product:id,name_en', 'party:id,party_en', 'load_data:id,load_seq')->orderBy('created_at', 'desc')->get()->map(function ($item) {
-            $item->table = 'out';
+               \Log::info('Total stock in count: '. Stock_out::where('clear_status', 'not_clear')->count());
+        
 
-            return $item;
-        });
+            $nextCursor = optional($stockOut->nextCursor())->encode();
+             \Log::info('Next cursor for stock out list: '. $nextCursor);
 
-        $merge = $stock_in_query->concat($stock_out_query)->sortByDesc(function ($item) {
-            return Carbon::createFromFormat('d-m-Y H:i:s', $item->created_at);
-        })
-            ->values();
+        }  else {
 
-        $stock_data = $merge->map(function ($item) {
+            // ✅ UNION BOTH
+            $stockIn =  Stock_in::with(['product_data:id,name_en', 'farm_data:id,farm_en', 'load_data:id,load_seq'])
+            ->where('clear_status', 'not_clear')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id') // 🔥 IMPORTANT
+            ->cursorPaginate(10, ['*'], 'cursor', $cursor);
+            $query = $stockIn;
 
-            $type = $item->table;
+            
+            //    \Log::info('Total stock in count: '. Stock_in::where('clear_status', 'not_clear')->count());
+        
 
-            if ($type == 'in') {
-                $item->user = $item->farm_data;
-                // $item->load_det = $item->load_data->load_seq ?? null;
-            } else {
-                $item->user = $item->party;
-                // $item->load_det = $item->load->load_seq ?? null;
-            }
+            // $nextCursor = optional($stockIn->nextCursor())->encode();
+            //  \Log::info('Next cursor for stock in list: '. $nextCursor);
+        }
 
-            return [
-                'id' => $item->id,
-
-                'product_name' => $item->table === 'in'
-                                    ? $item->product_data->name_en ?? null
-                                    : $item->product->name_en ?? null,
-
-                'total_piece' => $item->total_piece ?? 0,
-
-                'bill_piece' => $item->bill_piece ?? 0,
-
-                'grace_piece' => $item->grace_piece ?? 0,
-
-                'party_name' => $item->table === 'out'
-                                    ? $item->party->party_en ?? null
-                                    : null,
-
-                'farmer_name' => $item->table === 'in'
-                                    ? $item->farm_data->farm_en ?? null
-                                    : null,
-
-                'load_seq' => $item->load_data->load_seq ?? null,
-
-                'billing_amount' => $item->bill_amount ?? 0,
-
-                'type' => $item->table,
-
-                'created_at' => $item->created_at,
-            ];
-            //    return $item;
-
-        });
+        // ✅ FINAL CURSOR PAGINATION
+        // $transactions = DB::query()
+        //     ->fromSub($query, 'stock_transactions')
+        //     ->orderByDesc('created_at')
+        //     ->cursorPaginate(10);
 
         return [
-            'stock_data' => $stock_data,
-
+            'stock_data' => $query->items(),
+            'next_cursor' => optional($query->nextCursor())->encode()
         ];
     }
 
@@ -274,7 +359,7 @@ class Stock_ser
         }
 
         $stock_in = Stock_in::where('product_id', $product_id)->where('clear_status','not_clear')->sum('total_piece');
-        $stock_out = Stock_out::where('product_id', $product_id)->where('clear_status','not_clear')->sum('total_piece');
+        $stock_out = Stock_out::where('product_id', $product_id)->where('clear_status','not_clear')->whereIn('cat', ['load', 'sales'])->sum('total_piece');
 
         $stock = $stock_in - $stock_out;
 
@@ -285,6 +370,7 @@ class Stock_ser
 
     public static function add_load_summary(array $data)
     {
+        // \Log::info('Adding Load Summary Data: ', $data);
         $load_id = $data['load_id'];
 
         $load = Load::where('id', $load_id)->first();
@@ -365,6 +451,8 @@ class Stock_ser
 
         $summary = Summary::where('load_id', $load_id)->first();
 
+        $summary->load_status = $summary->load_data->load_status ?? null;
+
         if (! $summary) {
             throw new \Exception('Summary not found');
         }
@@ -412,7 +500,7 @@ class Stock_ser
         }
 
         if ($data['type'] == 'completed') {
-            \Log::info('edit load summary', ['data' => $data, 'summary' => $summary]);
+            // \Log::info('edit load summary', ['data' => $data, 'summary' => $summary]);
 
             $grace_piece = round(($data['grace_new'] / 100) * $summary->filter_total);
 
@@ -523,9 +611,11 @@ class Stock_ser
 
     public static function add_invoice(array $data)
     {
-        \Log::info('Adding Invoice Data: ', $data);
-        \Log::info('file data: ', ['file' => isset($data['file']) ? $data['file']->getClientOriginalName() : 'No file']);
+        // \Log::info('Adding Invoice Data: ', $data);
+        // \Log::info('file data: ', ['file' => isset($data['file']) ? $data['file']->getClientOriginalName() : 'No file']);
+
         $load_id = $data['load_id'];
+        $invoice_id = $data['inv_prime'] ?? null;
 
         $load = Load::where('id', $load_id)->first();
 
@@ -550,59 +640,143 @@ class Stock_ser
             // $filePath = $file->storeAs('invoices', $fileName, 'public');
         }
 
-        $m_inv = M_invoice::create([
-            'load_id' => $load_id,
-            'ext_piece' => $data['ext_piece'] ?? null,
-            'grace_per' => $data['grace_per'] ?? null,
-            'price' => $data['price'] ?? null,
-            'charges' => $data['charges'] ?? null,
-            'description' => $data['description'] ?? null,
-            'file' => $filePath ?? null,
-            'product_profit' => $data['product_profit'] ?? null,
-            'loading' => $data['loading'] ?? null,
-            'commission' => $data['commission'] ?? null,
-            'final_loss' => $data['final_loss'] ?? null,
-            'profit_loss' => $data['profit_loss'] ?? null,
-            'shift_loss' => $data['shift_loss'] ?? null,
-            'status' => 'active',
-            'c_by' => Auth::guard('tenant')->user()->id ?? null,
-        ]);
+        // $m_inv = M_invoice::create([
+        //     'load_id' => $load_id,
+        //     'ext_piece' => $data['ext_piece'] ?? null,
+        //     'grace_per' => $data['grace_per'] ?? null,
+        //     'price' => $data['price'] ?? null,
+        //     'charges' => $data['charges'] ?? null,
+        //     'description' => $data['description'] ?? null,
+        //     'file' => $filePath ?? null,
+        //     'product_profit' => $data['product_profit'] ?? null,
+        //     'loading' => $data['loading'] ?? null,
+        //     'commission' => $data['commission'] ?? null,
+        //     'final_loss' => $data['final_loss'] ?? null,
+        //     'profit_loss' => $data['profit_loss'] ?? null,
+        //     'shift_loss' => $data['shift_loss'] ?? null,
+        //     'status' => 'active',
+        //     'c_by' => Auth::guard('tenant')->user()->id ?? null,
+        // ]);
 
-        foreach ($data['product_list'] as $pr) {
+        if ($invoice_id) {
 
-            $e_inv = E_invoice::create([
-                'inv_id' => $m_inv->id,
+            $m_inv = M_invoice::find($invoice_id);
+
+            if (!$m_inv) {
+                throw new \Exception('Invoice not found');
+            }
+
+            $m_inv->update([
+                'ext_piece' => $data['ext_piece'] ?? null,
+                'grace_per' => $data['grace_per'] ?? null,
+                'price' => $data['price'] ?? null,
+                'charges' => $data['charges'] ?? null,
+                'description' => $data['description'] ?? null,
+                'file' => $filePath ?? $m_inv->file,
+                'product_profit' => $data['product_profit'] ?? null,
+                'loading' => $data['loading'] ?? null,
+                'commission' => $data['commission'] ?? null,
+                // 'final_loss' => $data['final_loss'] ?? null,
+                'profit_loss' => $data['profit_loss'] ?? null,
+                'shift_loss' => $data['shift_loss'] ?? null,
+            ]);
+
+           
+
+        } else {
+
+            $m_inv = M_invoice::create([
                 'load_id' => $load_id,
-                'product' => $pr['product'] ?? null,
-                'total' => $pr['total'] ?? null,
-                'grace' => $pr['grace'] ?? null,
-                'price' => $pr['price'] ?? null,
-                'bill_amt' => $pr['bill_amt'] ?? null,
+                'ext_piece' => $data['ext_piece'] ?? null,
+                'grace_per' => $data['grace_per'] ?? null,
+                'price' => $data['price'] ?? null,
+                'charges' => $data['charges'] ?? null,
+                'description' => $data['description'] ?? null,
+                'file' => $filePath ?? null,
+                'product_profit' => $data['product_profit'] ?? null,
+                'loading' => $data['loading'] ?? null,
+                'commission' => $data['commission'] ?? null,
+                'final_loss' => $data['final_loss'] ?? null,
+                'profit_loss' => $data['profit_loss'] ?? null,
+                'shift_loss' => $data['shift_loss'] ?? null,
                 'status' => 'active',
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
             ]);
+        }
 
-            $e_inv->save();
+
+        foreach ($data['product_list'] as $pr) {
+
+            // $e_inv = E_invoice::create([
+            //     'inv_id' => $m_inv->id,
+            //     'load_id' => $load_id,
+            //     'product' => $pr['product'] ?? null,
+            //     'total' => $pr['total'] ?? null,
+            //     'grace' => $pr['grace'] ?? null,
+            //     'price' => $pr['price'] ?? null,
+            //     'bill_amt' => $pr['bill_amt'] ?? null,
+            //     'status' => 'active',
+            //     'c_by' => Auth::guard('tenant')->user()->id ?? null,
+            // ]);
+
+            // $e_inv->save();
+
+             $item_id = $pr['item_id'] ?? null;
+
+                // =========================
+                // E_INVOICE (UPDATE OR CREATE)
+                // =========================
+                $e_inv = E_invoice::updateOrCreate(
+                    ['id' => $item_id], // match condition
+                    [
+                        'inv_id' => $m_inv->id,
+                        'load_id' => $load_id,
+                        'product' => $pr['product'] ?? null,
+                        'total' => $pr['total'] ?? null,
+                        'grace' => $pr['grace'] ?? null,
+                        'price' => $pr['price'] ?? null,
+                        'bill_amt' => $pr['bill_amt'] ?? null,
+                        'status' => 'active',
+                        'c_by' => Auth::guard('tenant')->user()->id ?? null,
+                    ]
+                );
 
             $bill_piece = $pr['total'] - ($pr['total'] * ($pr['grace'] / 100));
 
-            $stock_out = Stock_out::create([
-                'cat' => 'inv',
-                'product_id' => $pr['product'] ?? null,
-                'load_id' => $load_id,
-                'total_piece' => $pr['total'] + $pr['grace'] ?? null,
-                'grace_piece' => $pr['grace'] ?? null,
-                'bill_piece' => $pr['total'],
-                'price' => $pr['price'] ?? null,
-                'bill_amount' => $pr['bill_amt'] ?? null,
-                'total_amt' => $pr['bill_amt'] ?? null,
-                'c_by' => Auth::guard('tenant')->user()->id ?? null,
-            ]);
+            // $stock_out = Stock_out::create([
+            //     'cat' => 'inv',
+            //     'product_id' => $pr['product'] ?? null,
+            //     'load_id' => $load_id,
+            //     'total_piece' => $pr['total'] + $pr['grace'] ?? null,
+            //     'grace_piece' => $pr['grace'] ?? null,
+            //     'bill_piece' => $pr['total'],
+            //     'price' => $pr['price'] ?? null,
+            //     'bill_amount' => $pr['bill_amt'] ?? null,
+            //     'total_amt' => $pr['bill_amt'] ?? null,
+            //     'c_by' => Auth::guard('tenant')->user()->id ?? null,
+            // ]);
+
+             Stock_out::updateOrCreate(
+                [
+                    'load_id' => $load_id,
+                    'product_id' => $pr['product'],
+                    'cat' => 'inv',
+                ], // unique condition (IMPORTANT)
+                [
+                    'total_piece' => ($pr['total'] ?? 0) + ($pr['grace'] ?? 0),
+                    'grace_piece' => $pr['grace'] ?? null,
+                    'bill_piece' => $pr['total'] ?? null,
+                    'price' => $pr['price'] ?? null,
+                    'bill_amount' => $pr['bill_amt'] ?? null,
+                    'total_amt' => $pr['bill_amt'] ?? null,
+                    'c_by' => Auth::guard('tenant')->user()->id ?? null,
+                ]
+            );
 
             // \Log::info('Creating e_inv: ', [' inv error'=>json_encode($e_inv->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)]);
             //  \Log::info("Creating Stock Out:\n" ,['stock error'=> json_encode($stock_out->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)]);
 
-            $stock_out->save();
+            // $stock_out->save();
         }
 
         // ✅ Update Prime Load status ONLY AFTER invoice success
@@ -631,70 +805,189 @@ class Stock_ser
 
     // function to get petty cash individual
 
+    // public static function petty_cash_ind(array $data)
+    // {
+    //     $emp_id = $data['emp_id'] ?? null;
+
+    //     if (! $emp_id) {
+    //         throw new \Exception('Employee ID is required');
+    //     }
+
+    //     $petty_list = Petty_cash::where('emp_id', $emp_id)->get()->map(function ($item) {
+    //         $item->table = 'petty';
+
+    //         return $item;
+    //     });
+
+    //     $date = now()->toDateString();
+
+    //     $petty_cash_given = $petty_list->where('type', 'petty')->sum('amount');
+    //     $petty_cash_settle = $petty_list->where('type', 'settle')->sum('amount');
+
+    //     $farmer_adv = Farmer::where('c_by', $emp_id)->pluck('adv_prime')->filter();
+
+    //     $farmer_paid_list = Farmer_cash::with(['farm_data:id,farm_en,location'])->where('type', '!=', 'advance_deduct')->whereNotIn('id', $farmer_adv)->where('c_by', $emp_id);
+
+    //     if (isset($data['limit']) && is_int($data['limit'])) {
+    //         $farmer_paid_list = $farmer_paid_list->limit($data['limit']);
+    //     }
+    //     $farmer_paid_list = $farmer_paid_list->orderBy('id', 'desc')
+    //         ->get()->map(function ($item) {
+    //             $item->table = 'farmer_cash';
+
+    //             return $item;
+    //         });
+
+    //     $farmer_today_cash_spent = Farmer_cash::where('c_by', $emp_id)
+    //         ->whereNotIn('id', $farmer_adv)
+    //         ->whereDate('created_at', today())
+    //         ->sum('amount');
+
+    //     $today_petty_given = Petty_cash::where('emp_id', $emp_id)
+    //         ->whereDate('date', today())
+    //         ->where('type', 'petty')
+    //         ->sum('amount');
+
+    //     // \Log::info('Today petty given: '. $today_petty_given);
+    //     // \Log::info('Today employee: '. $emp_id);
+
+    //     $today_petty_settle = Petty_cash::where('emp_id', $emp_id)
+    //         ->whereDate('date', today())
+    //         ->where('type', 'settle')
+    //         ->sum('amount');
+
+    //     // $overall_list = $petty_list->concat($farmer_paid_list)->sortByDesc(function ($item) {
+    //     //         return Carbon::createFromFormat('d-m-Y H:i:s', $item->created_at);
+    //     //     })->values();
+
+    //     // \Log::info('petty cash given: '. $petty_cash_given);
+    //     // \Log::info('petty cash settle: '. $petty_cash_settle);
+    //     // \Log::info('farmer paid sum: '. $farmer_paid_list->sum('amount'));
+
+    //     // \Log::info('Balance Calculation: ('.$today_petty_given.' - '.$today_petty_settle.') - '.$farmer_today_cash_spent.')');
+
+    //     $balance = ($petty_cash_given - $petty_cash_settle) - $farmer_paid_list->sum('amount');
+
+    //     return ['cash_given' => ($today_petty_given), 'cash_used' => $farmer_today_cash_spent, 'balance' => $balance, 'list' => $farmer_paid_list];
+    // }
+
     public static function petty_cash_ind(array $data)
     {
         $emp_id = $data['emp_id'] ?? null;
+        $cursor = $data['cursor'] ?? null;
+        $type = $data['type'] ?? null;
 
-        if (! $emp_id) {
-            throw new \Exception('Employee ID is required');
-        }
+        $start_date = $data['start_date'] ?? null;
+        $end_date = $data['end_date'] ?? null;
 
-        $petty_list = Petty_cash::where('emp_id', $emp_id)->get()->map(function ($item) {
-            $item->table = 'petty';
+        // \Log::info('petty_cash_ind called with data: ', ['emp_id' => $emp_id, 'cursor' => $cursor, 'type' => $type,
+        //     'start_date' => $start_date,
+        //     'end_date' => $end_date,
+        // ]);
 
-            return $item;
-        });
+        // if (!$emp_id) {
+        //     throw new \Exception('Employee ID is required');
+        // }
 
-        $date = now()->toDateString();
+        // $limit = $data['limit'] ?? null;
 
-        $petty_cash_given = $petty_list->where('type', 'petty')->sum('amount');
-        $petty_cash_settle = $petty_list->where('type', 'settle')->sum('amount');
+        // ✅ 1. Petty totals (single query)
+        $pettyTotals = Petty_cash::where('emp_id', $emp_id)
+            ->selectRaw("
+                SUM(CASE WHEN type = 'petty' THEN amount ELSE 0 END) as total_given,
+                SUM(CASE WHEN type = 'settle' THEN amount ELSE 0 END) as total_settle
+            ")
+            ->first();
 
-        $farmer_adv = Farmer::where('c_by', $emp_id)->pluck('adv_prime')->filter();
+        // ✅ 2. Today petty (single query)
+        $todayPetty = Petty_cash::where('emp_id', $emp_id)
+            ->whereDate('date', today())
+            ->selectRaw("
+                SUM(CASE WHEN type = 'petty' THEN amount ELSE 0 END) as today_given,
+                SUM(CASE WHEN type = 'settle' THEN amount ELSE 0 END) as today_settle
+            ")
+            ->first();
 
-        $farmer_paid_list = Farmer_cash::with(['farm_data:id,farm_en,location'])->where('type', '!=', 'advance_deduct')->whereNotIn('id', $farmer_adv)->where('c_by', $emp_id);
+        // ✅ 3. Farmer advance IDs
+        $farmer_adv = Farmer::where('c_by', $emp_id)
+            ->pluck('adv_prime')
+            ->filter();
 
-        if (isset($data['limit']) && is_int($data['limit'])) {
-            $farmer_paid_list = $farmer_paid_list->limit($data['limit']);
-        }
-        $farmer_paid_list = $farmer_paid_list->orderBy('id', 'desc')
-            ->get()->map(function ($item) {
+        // ✅ 4. Farmer paid list (optimized)
+        $farmer_paid_query = Farmer_cash::with(['farm_data:id,farm_en,location'])
+            ->where('c_by', $emp_id)
+            ->where('type', '!=', 'advance_deduct')
+            ->whereNotIn('id', $farmer_adv)
+
+            ->when(!empty($start_date) && !empty($end_date), function ($q) use ($start_date, $end_date) {
+                $q->whereBetween('created_at', [
+                    \Carbon\Carbon::parse($start_date)->startOfDay(),
+                    \Carbon\Carbon::parse($end_date)->endOfDay(),
+                ]);
+            })
+
+            ->orderByDesc('id');
+
+        // if ($limit) {
+        //     $farmer_paid_query->limit($limit);
+        // }
+
+          // 🔥 5. Apply cursor OR full fetch
+         if (($type=='details_list')) {
+
+            // \Log::info('Cursor pagination applied for farmer paid list', ['employee_id' => $emp_id, 'cursor' => $cursor]);
+            // ✅ Cursor pagination
+            $farmer_paid_list = $farmer_paid_query
+                ->cursorPaginate(15);
+
+            $list = collect($farmer_paid_list->items())->map(function ($item) {
                 $item->table = 'farmer_cash';
-
                 return $item;
             });
 
+            // Log::info("framer list".json_encode($list, JSON_PRETTY_PRINT));
+
+            $nextCursor = optional($farmer_paid_list->nextCursor())->encode();
+            // \Log::info('Next cursor for farmer paid list: '. $nextCursor);
+
+        } else {
+
+            // ✅ Normal full fetch
+            $list = $farmer_paid_query->get()->map(function ($item) {
+                $item->table = 'farmer_cash';
+                return $item;
+            });
+
+            $nextCursor = null;
+        }
+
+        // $farmer_paid_list = $farmer_paid_query->get()->map(function ($item) {
+        //     $item->table = 'farmer_cash';
+        //     return $item;
+        // });
+
+        // ✅ 5. Farmer total spent (DB)
+        $farmer_total_spent = Farmer_cash::where('c_by', $emp_id)
+            ->where('type', '!=', 'advance_deduct')
+            ->whereNotIn('id', $farmer_adv)
+            ->sum('amount');
+
+        // ✅ 6. Today farmer spent
         $farmer_today_cash_spent = Farmer_cash::where('c_by', $emp_id)
             ->whereNotIn('id', $farmer_adv)
             ->whereDate('created_at', today())
             ->sum('amount');
 
-        $today_petty_given = Petty_cash::where('emp_id', $emp_id)
-            ->whereDate('date', today())
-            ->where('type', 'petty')
-            ->sum('amount');
+        // ✅ 7. Balance
+        $balance = ($pettyTotals->total_given - $pettyTotals->total_settle) - $farmer_total_spent;
 
-        // \Log::info('Today petty given: '. $today_petty_given);
-        // \Log::info('Today employee: '. $emp_id);
-
-        $today_petty_settle = Petty_cash::where('emp_id', $emp_id)
-            ->whereDate('date', today())
-            ->where('type', 'settle')
-            ->sum('amount');
-
-        // $overall_list = $petty_list->concat($farmer_paid_list)->sortByDesc(function ($item) {
-        //         return Carbon::createFromFormat('d-m-Y H:i:s', $item->created_at);
-        //     })->values();
-
-        // \Log::info('petty cash given: '. $petty_cash_given);
-        // \Log::info('petty cash settle: '. $petty_cash_settle);
-        // \Log::info('farmer paid sum: '. $farmer_paid_list->sum('amount'));
-
-        // \Log::info('Balance Calculation: ('.$today_petty_given.' - '.$today_petty_settle.') - '.$farmer_today_cash_spent.')');
-
-        $balance = ($petty_cash_given - $petty_cash_settle) - $farmer_paid_list->sum('amount');
-
-        return ['cash_given' => ($today_petty_given), 'cash_used' => $farmer_today_cash_spent, 'balance' => $balance, 'list' => $farmer_paid_list];
+        return [
+            'cash_given' => $todayPetty->today_given ?? 0,
+            'cash_used' => $farmer_today_cash_spent ?? 0,
+            'balance' => $balance ?? 0,
+            'list' => $list,
+            'next_cursor' => $nextCursor
+        ];
     }
 
     // function to get petty cash individual view all
@@ -758,6 +1051,9 @@ class Stock_ser
             $invoice->inv_loading_charge += collect($invoice->charges ?? [])->sum('amt');
             $invoice->exists_check = M_invoice::where('load_id', $load_id)->exists() ? true : false;
         }
+        // else{
+        //     $invoice = null;
+        // }
 
 
         if (! $invoice) {
@@ -772,7 +1068,7 @@ class Stock_ser
 
         $trader_kyc = Kyc::where('user_id', Auth('tenant')->user()->id ?? null)->first();
 
-        \Log::info('get_invoice trader_kyc: '. json_encode($invoice, JSON_PRETTY_PRINT));
+        // \Log::info('get_invoice trader_kyc: '. json_encode($invoice, JSON_PRETTY_PRINT));
 
         return ['invoice' => $invoice, 'prime_load' => $prime_load, 'trader_kyc' => $trader_kyc];
     }
@@ -786,7 +1082,7 @@ class Stock_ser
         if (($data['type'] === 'invoice')) {
 
             //    $inv_data = Self::get_invoice($data);
-            $inv_data = M_invoice::where('load_id', $data['load_id'])->with(['invoice_items', 'load_data', 'invoice_items.product_data:id,name_en', 'load_data.party_data:id,party_en,party_location'])->get();
+            $inv_data = M_invoice::where('load_id', $data['load_id'])->with(['invoice_items', 'load_data', 'invoice_items.product_data:id,name_en'])->get();
 
             $party_id = $inv_data->first()->load_data->party_id ?? null;
 
@@ -1076,5 +1372,79 @@ class Stock_ser
                 'message' => 'An error occurred while fetching report.'
             ], 500);
         }
+    }
+
+
+    // function for  stock edit data retrive 
+
+    public static function stock_edit_data(array $data)
+    {
+        $stock_id = $data['stock_id'] ?? null;
+        $type = $data['type'] ?? null;
+
+        if (! $stock_id) {
+            throw new \Exception('Stock ID is required');
+        }
+
+
+        if($type == 'purchase'){
+            $stock = Stock_in::with(['product_data:id,name_en','farm_data:id,farm_en'])->where('id', $stock_id)->first();
+        } elseif($type == 'sales'){
+            $stock = Stock_out::with(['product:id,name_en','party:id,party_en'])->where('id', $stock_id)->first();
+        } else {
+             throw new \Exception('Invalid stock type');
+        }
+
+
+        return $stock;
+    }
+
+    // function to edit stock store 
+
+    public static function stock_edit_store(array $data)
+    {
+        $stock_id = $data['stock_id'] ?? null;
+        $type = $data['type'] ?? null;
+
+        if (! $stock_id) {
+            throw new \Exception('Stock ID is required');
+        }
+
+        if($type == 'purchase'){
+            $stock = Stock_in::where('id', $stock_id)->first();
+        } elseif($type == 'sales'){
+            $stock = Stock_out::where('id', $stock_id)->first();
+        } else {
+             throw new \Exception('Invalid stock type');
+        }
+
+        if (! $stock) {
+            throw new \Exception('Stock record not found');
+        }
+
+        if(isset($data['adv']) && ($type == 'purchase') && ($data['adv'] != $stock->adv)){
+                if($stock->adv != $data['adv']){
+                    Farmer_cash::where('id', $stock->e_farmer_prime)->update(['amount' => $data['adv']]);
+                }
+        }
+
+        $stock->update([
+            'product_id' => $data['product_id'] ?? $stock->product_id,
+            'farm_id' => $data['farmer_id'] ?? $stock->farm_id,
+            'total_piece' => $data['total_piece'] ?? $stock->total_piece,
+            'grace_piece' => $data['grace_piece'] ?? $stock->grace_piece,
+            'grace_per' => $data['grace_per'] ?? $stock->grace_per,
+            'bill_piece' => $data['bill_piece'] ?? $stock->bill_piece,
+            'price' => $data['price'] ?? $stock->price,
+            'commission' => $data['commission'] ?? $stock->commission,
+            'bill_amount' => $data['bill_amount'] ?? $stock->bill_amount,
+            'quality' => $data['quality'] ?? $stock->quality,
+            'total_amt' => ($data['total_amt'] ?? $stock->total_amt),
+            'adv' => $data['adv'] ?? $stock->adv,
+        ]);
+
+       
+
+        return $stock;
     }
 }

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('password')->nullable();
             $table->string('fcm', 255)->nullable();
             $table->string('location',200)->nullable();
+            $table->enum('cash_permission', ['yes', 'no'])->default('yes');
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });

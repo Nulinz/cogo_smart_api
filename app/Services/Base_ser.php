@@ -14,11 +14,13 @@ use App\Models\Quality;
 use App\Models\Transport;
 use App\Models\Truck_capacity;
 use App\Models\User;
+use App\Models\Sequence;
 use App\Models\Subscription;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class Base_ser
 {
@@ -256,6 +258,7 @@ class Base_ser
             $emp = $item->first()->emp_data;
 
             return [
+                'coconut_id' => $item->first()->id ?? null,
                 'emp_name' => $emp->name ?? null,
                 'location' => $emp->location ?? null,
                 'role' => $emp->role ?? null,
@@ -307,13 +310,33 @@ class Base_ser
     public static function dashboard_data(array $data)
     {
 
-        $dash_farmer = Farmer_ser::get_all_farmers();
+        // $dash_farmer = Farmer_ser::get_all_farmers_opt([]);
 
-        $farmer_card = $dash_farmer['head_card'];
+        // $farmer_card = $dash_farmer['head_card'];
 
-        $dash_party = Party_ser::get_all_party();
+        // $dash_party = Party_ser::get_all_party_opt([]);
 
-        $party_card = $dash_party['head_card'];
+        // $party_card = $dash_party['head_card'];
+
+        $db = $data['tenant_db'];
+
+
+
+        // 🧑‍🌾 Farmer Card Cache
+        $farmer_card = Cache::store('redis')->remember("dashboard_farmer_card_{$db}",30,
+            function () {
+                $dash_farmer = Farmer_ser::get_all_farmers_opt([]);
+                return $dash_farmer['head_card'];
+            }
+        );
+
+        // 🏢 Party Card Cache
+        $party_card = Cache::store('redis')->remember("dashboard_party_card_{$db}",30,
+            function () {
+                $dash_party = Party_ser::get_all_party_opt([]);
+                return $dash_party['head_card'];
+            }
+        );
 
         // \Log::info('fetch data', ['farmer_card' => $farmer_card, 'party_card' => $party_card, 'user_id' => Auth::guard('tenant')->user()->id]);
 
@@ -392,19 +415,39 @@ class Base_ser
             $petty_cash = $bal['balance'];
         }
 
-          if (Schema::connection('tenant')->hasTable('subscription')) {
+            if (Schema::connection('tenant')->hasTable('subscription')) {
 
-                 $subscription = Subscription::where('status', 'active')->where('expiry_date', '<=', date('Y-m-d'))->latest()->first();
+                //  $subscription = Subscription::where('status','active')->where('expiry_date', '<=', date('Y-m-d'))->latest()->first();
 
-                 if($subscription){
-                    $subscription = true;
-                 }else{
-                    $subscription = false;
-                 }
-            } 
-            else {
+              $subscription_data = Subscription::orderByDesc('id')->first();
+
                 $subscription = false;
-            }
+
+                if ($subscription_data) {
+
+                    $subscription = $subscription_data->expiry_date >= date('Y-m-d');
+                }
+
+                \Log::info('Subscription check', [
+                    'subscription' => $subscription
+                ]);
+                  
+
+                //  if($subscription){
+                //     $subscription = true;
+                //  }else{
+                    
+                //     $subscription = false;
+                //  }
+
+                //  \Log::info('Subscription check', ['subscription_yes' => $subscription]);
+            } 
+            // else {
+            //     $subscription = false;
+            //     //  \Log::info('Subscription check', ['subscription_no' => $subscription]);
+            // }
+
+
 
    
         
@@ -417,6 +460,7 @@ class Base_ser
             'petty_cash' => $petty_cash ?? 0,
             'expense_today' => $expense_today ?? null,
             'subscription' => $subscription ,
+            'sequence' => Sequence::count()
         ];
 
     }
@@ -433,12 +477,94 @@ class Base_ser
 
         // $user_spent = $user_paid_list->sum('amount');
 
-        $data = Stock_ser::petty_cash_ind(['emp_id' => $user->id, 'limit' => 20]);
+        $data = Stock_ser::petty_cash_ind(['emp_id' => $user->id, 'type' => 'details_list']);
 
         if (! $user) {
             throw new \Exception('User not found');
         }
 
-        return ['user' => $user, 'user_balance' => $data['balance'], 'cash_given' => $data['cash_given'], 'cash_spent' => $data['cash_used'], 'list' => $data['list']];
+        return ['user' => $user, 'user_balance' => $data['balance'], 'cash_given' => $data['cash_given'], 'cash_spent' => $data['cash_used'], 'list' => $data['list'],'next_cursor' => $data['next_cursor'] ?? null];
+    }
+
+    // function to delete coconut entry
+
+    public static function delete_coconut(array $data)
+    {
+        $coconut = Coconut::where('id', $data['coconut_id'])->first();
+
+        if (! $coconut) {
+            throw new \Exception('Coconut entry not found');
+        }
+
+        return $coconut->delete();
+    }
+
+    // function to get dashboard load data
+
+  public static function dashboard_load(array $data)
+    {
+        $prime_load = Prime_load::with([
+            'party_data:id,party_en,party_location',
+            'load_list:id,load_id,total_piece,farmer_id',
+            'load_list.farmer_data:id,farm_en',
+            'shift_list:id,load_id,total_piece'
+        ])
+        ->withSum('load_list as add_piece', 'total_piece')
+        ->withSum('shift_list as shift_piece', 'total_piece')
+        ->where('status', 'active')
+        ->where('load_status', '!=', 'inv_completed');
+
+        if (Auth::guard('tenant')->user()->role != 'admin') {
+            $prime_load->whereJsonContains('team', [Auth::guard('tenant')->user()->id]);
+        }
+
+        $loads = $prime_load->orderByDesc('id')->cursorPaginate(5);
+
+        // dd($loads->toArray());
+
+        // Transform items safely using through()
+        $transformed = $loads->through(function ($item) {
+            $loaded = ($item->add_piece ?? 0) - ($item->shift_piece ?? 0);
+            $remain = $item->req_qty - $loaded;
+
+            $last_farmer = collect($item->load_list ?? [])
+                ->sortByDesc('id')
+                ->take(2)
+                ->map(function ($load) {
+                    return [
+                        'farmer_det' => $load->farmer_data->farm_en ?? null,
+                        'tp' => $load->total_piece ?? 0,
+                    ];
+                })
+                ->values();
+
+                unset($item->load_list, $item->shift_list,$item->team);
+
+            return $item;
+
+            // return [
+            //     'load_id' => $item->id ?? null,
+            //     'load_seq' => $item->load_seq ?? null,
+            //     'veh_no' => $item->veh_no ?? null,
+            //     'party_name' => $item->party_data->party_en ?? null,
+            //     'party_location' => $item->party_data->party_location ?? null,
+            //     'load_date' => isset($item->load_date) ? date('d-m-Y', strtotime($item->load_date)) : null,
+            //     'req_qty' => $item->req_qty ?? 0,
+            //     'total_loaded' => $loaded,
+            //     'filtered_total' => $item->filter_total ?? 0,
+            //     'pending_qty' => $remain,
+            //     'last_farmer' => $last_farmer,
+            //     'product_id' => $item->product_id ?? null,
+            //     'market_place' => $item->market ?? null,
+            // ];
+        });
+
+        // $item = $transformed->items();
+
+        return [
+            'data' => $transformed->items(),             // Keep as array
+            'next_cursor' => $transformed->nextCursor()?->encode(),
+            'previous_cursor' => $transformed->previousCursor()?->encode(),
+        ];
     }
 }

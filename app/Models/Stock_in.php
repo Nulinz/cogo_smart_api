@@ -23,6 +23,7 @@ class Stock_in extends Model
         'commission',
         'bill_amount',
         'adv',
+        'e_farmer_prime',
         'quality',
         'total_amt',
         'status',
@@ -30,9 +31,16 @@ class Stock_in extends Model
         'c_by',
     ];
 
-     public function getCreatedAtAttribute($value)
+    //  public function getCreatedAtAttribute($value)
+    // {
+    //     return date('d-m-Y H:i:s', strtotime($value));
+    // }
+
+     public function getCreatedAtFormattedAttribute()
     {
-        return date('d-m-Y H:i:s', strtotime($value));
+        return $this->created_at
+            ? $this->created_at->format('d-m-Y H:i:s')
+            : null;
     }
 
     public function product_data()

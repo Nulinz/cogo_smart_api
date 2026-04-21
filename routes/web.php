@@ -43,3 +43,5 @@ Route::get('user_list', [AdminController::class, 'user_list'])->name('user.list'
 Route::get('user_edit_show', [AdminController::class, 'user_edit_show'])->name('user.edit.show');
 Route::post('user_edit_store', [AdminController::class, 'user_edit_store'])->name('user.edit.store');
 Route::post('user_status_update', [AdminController::class, 'user_status_update'])->name('user.status.update');
+Route::post('user_mob_check', [AdminController::class, 'user_mob_check'])->name('user.mob.check');
+Route::post('user_password_change', [AdminController::class, 'user_password_change'])->name('user.password.change');

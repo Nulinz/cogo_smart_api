@@ -97,11 +97,11 @@ class Chart_cnt extends Controller
     {
         try {
             // Fetch party advance
-            $dash_farmer = Farmer_ser::get_all_farmers();
+            $dash_farmer = Farmer_ser::get_all_farmers_opt([]);
 
             $farmer_card = $dash_farmer['head_card'];
 
-            $dash_party = Party_ser::get_all_party();
+            $dash_party = Party_ser::get_all_party_opt([]);
 
             $party_card = $dash_party['head_card'];
 

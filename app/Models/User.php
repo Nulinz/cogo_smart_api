@@ -31,6 +31,7 @@ class User extends Authenticatable implements JWTSubject
         'role',
         'fcm',
         'location',
+        'cash_permission',
         'status'
     ];
 

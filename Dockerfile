@@ -10,13 +10,16 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     npm \
+    redis-tools \      
     && docker-php-ext-install \
         pdo_mysql \
         mbstring \
         exif \
         pcntl \
         bcmath \
-        gd
+        gd \
+        && pecl install redis \
+        && docker-php-ext-enable redis 
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('kyc', function (Blueprint $table) {
             $table->id();
-            $table->integer('user_id');
+            $table->unsignedBigInteger('user_id')->index();
             $table->string('f_name')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();

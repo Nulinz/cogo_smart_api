@@ -109,37 +109,121 @@ class Load_ser
         return $load_create;
     }
 
-    public static function get_load_list()
+    public static function get_load_list(array $data)
     {
-        $query = Prime_load::with(['party_data:id,party_en', 'transporter:id,transport', 'truck_capacity:id,capacity']);
+    //     $query = Prime_load::with(['party_data:id,party_en', 'transporter:id,transport', 'truck_capacity:id,capacity']);
         
-        if(Auth::guard('tenant')->user()->role != 'admin'){
+    //     if(Auth::guard('tenant')->user()->role != 'admin'){
+    //         $query->WhereJsonContains('team', [Auth::guard('tenant')->user()->id]);
+    //     }
+        
+    //     $query = $query->orderBy('id', 'desc')->get();
+
+    //     // \Log::info('Load List Query: ', $query->toArray());
+
+    //     $query->map(function($item){
+    //         // $item->load_piece = 0; // Access the appended attribute to load team members
+
+    //         $load_data = Self::ind_load_list(['load_id'=>$item->id]);
+
+    //         $item->load_piece = $load_data['summary']['card_billing_piece'] + $load_data['summary']['card_grace'];
+
+    //         $item->team_members = $item->getTeamMembersAttribute();
+
+    //         return $item;
+    //     });
+
+    //    $ongoing = $query->where('load_status','!=','inv_completed');
+
+    //    $completed = $query->where('load_status','inv_completed');
+
+    $status = $data['status'] ?? null; // Get the 'status' query parameter
+    $keyword = $data['keyword'] ?? null; // Get the 'keyword' query parameter for search
+
+    $query = Prime_load::with(['party_data:id,party_en', 'transporter:id,transport', 'truck_capacity:id,capacity']);
+
+        if (Auth::guard('tenant')->user()->role != 'admin') {
             $query->WhereJsonContains('team', [Auth::guard('tenant')->user()->id]);
         }
-        
-        $query = $query->orderBy('id', 'desc')->get();
 
-        // \Log::info('Load List Query: ', $query->toArray());
+        if ($status == 'completed') {
+            $query->where('load_status', '=', 'inv_completed');
+        } else {
+            $query->where('load_status', '!=', 'inv_completed');
+        }
 
-        $query->map(function($item){
-            // $item->load_piece = 0; // Access the appended attribute to load team members
+        // 🔍 SEARCH IMPLEMENTATION
+        if (!empty($keyword)) {
+            $query->where(function ($q) use ($keyword) {
+                // search in main table
+                $q->where('load_seq', 'like', "%{$keyword}%");
+            });
+        }
 
-            $load_data = Self::ind_load_list(['load_id'=>$item->id]);
+        $loads = $query->orderByDesc('id')->cursorPaginate(10);
 
-            $item->load_piece = $load_data['summary']['card_billing_piece'] + $load_data['summary']['card_grace'];
+        $loadTotals = Load::whereIn('load_id', $loads->pluck('id'))
+                    ->selectRaw('load_id, SUM(total_piece) as total, product_id')
+                    ->groupBy('load_id','product_id')
+                    ->get()
+                    ->keyBy('load_id');
 
-            $item->team_members = $item->getTeamMembersAttribute();
+               $shiftTotals = Shift::whereIn('load_id', $loads->pluck('id'))
+                ->selectRaw('load_id, SUM(total_piece) as total, product_id')
+                ->groupBy('load_id','product_id')
+                ->get()
+                ->keyBy('load_id');
 
-            return $item;
+            $loads->through(function ($item) use ($loadTotals, $shiftTotals) {
+
+                $item->load_piece =($loadTotals[$item->id]->total ?? 0)- ($shiftTotals[$item->id]->total ?? 0);
+
+                $item->team_members = $item->getTeamMembersAttribute();
+
+                return $item;
+            });
+
+              
+        // $loads->through(function ($item)  use ($summary) {
+
+        //     // $load_data = self::ind_load_list(['load_id' => $item->id]);
+
+        //     $item->load_piece = $summary['card_billing_piece'] + $summary['card_grace'];
+        //         // $load_data['summary']['card_billing_piece'] +
+        //         // $load_data['summary']['card_grace'];
+
+        //     $item->team_members = $item->getTeamMembersAttribute();
+
+        //     return $item;
+        // });
+
+        $load_data = $loads->map(function ($item) {
+
+            return [
+                'load_id' => $item->id,
+                'load_seq' => $item->load_seq,
+                'load_veh_no' => $item->veh_no,
+                'load_dr_no' => $item->dr_no,
+                'party_name' => $item->party_data->party_en ?? null,
+                'load_date' => $item->load_date,
+                'load_piece' => $item->load_piece,
+                'load_status' => $item->load_status,
+                'load_product' => $item->product_id,
+            ];
         });
 
-       $ongoing = $query->where('load_status','!=','inv_completed');
+        return [
+                'data' => $load_data,
+                'next_cursor' => $loads->nextCursor()?->encode(), // nullable, for next page
+                'previous_cursor' => $loads->previousCursor()?->encode(), // optional
+            ];
 
-       $completed = $query->where('load_status','inv_completed');
+        //  return $load_data;
+
 
         //  \Log::info('Final Load List: ', $query->toArray());
 
-        return ['ongoing'=>$ongoing->values(),'completed'=>$completed->values()];
+        // return ['ongoing'=>$ongoing->values(),'completed'=>$completed->values()];
     }
 
     // function to get individual load list
@@ -253,7 +337,7 @@ class Load_ser
         $purchase =  Stock_in::create(
             [
                 'cat' => $data['cat'],
-                'load_id' => $data['load_id'],
+                'load_id' => $data['load_id'] ?? null,
                 'farm_id' => $data['farmer_id'],
                 'product_id' => $data['product_id'],
                 'total_piece' => $data['total_piece'],
@@ -261,9 +345,9 @@ class Load_ser
                 'grace_per' => $data['grace_per'],
                 'bill_piece' => $data['bill_piece'],
                 'price' => $data['price'],
-                'commission' => $data['commission'],
+                'commission' => $data['commission'] ?? null,
                 'bill_amount' => $data['bill_amount'],
-                'adv' => $data['adv'],
+                'adv' => $data['adv'] ?? null,
                 'quality' => $data['quality'],
                 'total_amt' => $data['total_amt'],
                 'status' => $data['status'] ?? 'active',
@@ -274,9 +358,15 @@ class Load_ser
         if($data['adv'] > 0){
             // update farmer advance
 
-            $farmer = Farmer_ser::farmer_pay_in(['farm_id' => $data['farmer_id'],'amount' => $data['adv'], 'type' => 'advance_deduct','load_id' => $data['load_id']]);
+            $farmer = Farmer_ser::farmer_pay_in(['farm_id' => $data['farmer_id'],'amount' => $data['adv'], 'type' => 'advance_deduct','load_id' => $data['load_id'] ?? null]);
+
+            $purchase_update = $purchase->update([
+                'e_farmer_prime' =>  $farmer->id
+            ]);
 
         }
+
+       
 
         return $purchase;
     }
@@ -288,7 +378,7 @@ class Load_ser
         return Stock_out::create(
             [
                 'cat' => $data['cat'],
-                'load_id' => $data['load_id'],
+                'load_id' => $data['load_id'] ?? null,
                 'farm_id' => $data['party_id'],
                 'product_id' => $data['product_id'],
                 'total_piece' => $data['total_piece'],
@@ -296,10 +386,10 @@ class Load_ser
                 'grace_per' => $data['grace_per'],
                 'bill_piece' => $data['bill_piece'],
                 'price' => $data['price'],
-                'commission' => $data['commission'],
+                'commission' => $data['commission'] ?? 0,
                 'bill_amount' => $data['bill_amount'],
-                'adv' => $data['adv'],
-                'quality' => $data['quality'],
+                'adv' => $data['adv'] ?? 0,
+                'quality' => $data['quality'] ?? null,
                 'total_amt' => $data['total_amt'],
                 'status' => $data['status'] ?? 'active',
                 'c_by' => Auth::guard('tenant')->user()->id ?? null,
@@ -447,6 +537,16 @@ class Load_ser
                     'c_by' => Auth::guard('tenant')->user()->id ?? null,
                 ]
             );
+
+              // ✅ Update Shift with stock id
+                $add_load->update([
+                    'to_load' => $shift->id
+                ]);
+
+                // ✅ Update Stock with shift id
+                $shift->update([
+                    'to_load' => $add_load->id
+                ]);
         }
     }
 
@@ -457,7 +557,7 @@ class Load_ser
     
         $query = Prime_load::find($data['load_id']);
 
-        $load_list = Prime_load::where('product_id', $query->product_id)->where('id', '!=', $data['load_id'])->select('id','load_seq')->get();
+        $load_list = Prime_load::where('product_id', $query->product_id)->where('id', '!=', $data['load_id'])->where('load_status','!=', 'inv_completed')->select('id','load_seq')->get();
 
         return $load_list;
     }
@@ -568,5 +668,20 @@ class Load_ser
         $load_item_data = Load::with(['farmer_data:id,farm_en,location', 'product_data:id,name_en'])->where('id', $load_item_id)->first();
 
         return $load_item_data;
+    }
+
+    // function to fetch individual load data
+
+    public static function ind_load_data(array $data)
+    {
+        $load_id  = $data['load_id'];
+
+        if(!$load_id){
+            throw new \Exception('Load ID is required');
+        }
+
+        $load_data = Prime_load::where('id', $load_id)->first();
+
+        return $load_data;
     }
 }

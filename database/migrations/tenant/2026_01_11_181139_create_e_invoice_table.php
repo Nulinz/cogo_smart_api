@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('e_invoice', function (Blueprint $table) {
             $table->id();
-            $table->integer('inv_id')->nullable();
-            $table->integer('load_id')->nullable();
+            $table->unsignedBigInteger('inv_id')->nullable()->index();
+            $table->unsignedBigInteger('load_id')->nullable()->index();
             $table->integer('product')->nullable();
             $table->decimal('total', 10, 2)->nullable()->default(0);
             $table->decimal('grace',10, 2)->nullable()->default(0);

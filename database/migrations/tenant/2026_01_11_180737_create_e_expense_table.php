@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('e_expense', function (Blueprint $table) {
             $table->id();
-            $table->integer('emp_id')->nullable();
+            $table->unsignedBigInteger('emp_id')->nullable()->index();
             $table->decimal('amount', 10, 2)->nullable()->default(0);
             $table->string('method',100)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->integer('c_by')->nullable();
+            $table->unsignedBigInteger('c_by')->nullable();
             $table->timestamps();
         });
     }

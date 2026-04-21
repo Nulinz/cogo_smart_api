@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('e_shift', function (Blueprint $table) {
             $table->id();
             $table->enum('cat', ['load', 'others', 'stock'])->default('load');
-            $table->integer('load_id')->nullable();
+            $table->unsignedBigInteger('load_id')->nullable()->index();
             $table->integer('to_load')->nullable();
             $table->integer('party_id')->nullable();
             $table->integer('product_id')->nullable();

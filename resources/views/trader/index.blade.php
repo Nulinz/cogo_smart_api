@@ -43,6 +43,7 @@
                                             <th>Name</th>
                                             <th>Nick Name</th>
                                             <th>Mobile Number</th>
+                                            <th>Register Date</th>
                                             <th>Subscription Plan</th>
                                             <th>Subscription End</th>
                                         </tr>
@@ -54,6 +55,7 @@
                                                 <td>{{ $trader->name }}</td>
                                                 <td>{{ $trader->l_name }}</td>
                                                 <td>{{ $trader->phone }}</td>
+                                                <td>{{ $trader->register_date }}</td>
                                                 <td>{{ $trader->subscription_plan ?? 'N/A' }}</td>
                                                 <td>{{ $trader->subscription_end ?? 'N/A' }}</td>
                                             </tr>

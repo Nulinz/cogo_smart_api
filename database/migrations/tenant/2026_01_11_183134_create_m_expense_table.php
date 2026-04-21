@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('amount', 10, 2)->nullable();
             $table->text('notes')->nullable();
             $table->enum('status', ['pending', 'approved','rejected'])->default('pending');
-            $table->integer('c_by')->nullable();
+            $table->unsignedBigInteger('c_by')->nullable()->index();
             $table->timestamps();
         });
     }

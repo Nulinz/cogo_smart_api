@@ -118,7 +118,7 @@ return [
     */
 
     'refresh_iat' => env('JWT_REFRESH_IAT', false),
-    'refresh_ttl' => (int) env('JWT_REFRESH_TTL', 43200 ), // 30 days  for login session relogin again
+    'refresh_ttl' => (int) env('JWT_REFRESH_TTL', 43200), // 30 days  for login session relogin again
 
     /*
     |--------------------------------------------------------------------------

@@ -7,6 +7,7 @@ use App\Models\Expense;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class Exp_ser
 {
@@ -171,39 +172,123 @@ class Exp_ser
 
     // function to get expense emp profile
 
+    // public static function expense_emp_profile(array $data)
+    // {
+
+    //     $emp_id = $data['emp_id'];
+
+    //     $user_profile = User::where('id', $emp_id)->select('id', 'name')->first();
+
+    //     $exp_approve = Expense::with(['exp_category:id,cat'])->where('c_by', $emp_id)->get()->map(function ($item) {
+    //         $item->table = 'expense';
+
+    //         return $item;
+    //     });
+
+    //     $exp_transaction = E_expense::where('emp_id', $emp_id)->orderBy('created_at', 'desc')->get()->map(function ($item) {
+    //         $item->table = 'e_expense';
+
+    //         return $item;
+    //     });
+
+    //     $exp_balance = ($exp_approve->where('status', 'approved')->sum('amount') - $exp_transaction->sum('amount'));
+
+    //     $exp_pending = $exp_approve->where('status', 'pending')->sum('amount');
+
+    //     $exp_data = $exp_approve->concat($exp_transaction)->sortByDesc('created_at')->values();
+
+    //     $exp_out = $exp_transaction->sum('amount');
+
+    //     return [
+    //         'user_profile' => $user_profile,
+    //         'exp_balance' => $exp_balance,
+    //         'exp_pending' => $exp_pending,
+    //         'exp_transaction' => $exp_data,
+    //     ];
+
+    // }
+
+  
+
     public static function expense_emp_profile(array $data)
     {
-
         $emp_id = $data['emp_id'];
+        $cursor = $data['cursor'] ?? null;
+        $startDate = $data['start_date'] ?? null;
+        $endDate = $data['end_date'] ?? null;
+        // $perPage = $data['per_page'] ?? 10;
+        // \Log::info("Fetching expense profile for emp_id: $emp_id with cursor: $cursor, start_date: $startDate, end_date: $endDate");
 
-        $user_profile = User::where('id', $emp_id)->select('id', 'name')->first();
+        // ✅ 1. User
+        $user_profile = User::where('id', $emp_id)
+            ->select('id', 'name')
+            ->first();
 
-        $exp_approve = Expense::with(['exp_category:id,cat'])->where('c_by', $emp_id)->get()->map(function ($item) {
-            $item->table = 'expense';
+        // ✅ 2. Summary (fast DB aggregation)
+        $expSummary = Expense::where('c_by', $emp_id)
+            ->selectRaw("
+                SUM(CASE WHEN status = 'approved' THEN amount ELSE 0 END) as approved_total,
+                SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) as pending_total
+            ")
+            ->first();
 
-            return $item;
-        });
+        $exp_out = E_expense::where('emp_id', $emp_id)->sum('amount');
 
-        $exp_transaction = E_expense::where('emp_id', $emp_id)->orderBy('created_at', 'desc')->get()->map(function ($item) {
-            $item->table = 'e_expense';
+        $exp_balance = ($expSummary->approved_total ?? 0) - $exp_out;
+        $exp_pending = $expSummary->pending_total ?? 0;
 
-            return $item;
-        });
+        // ✅ 3. Expense (with category)
+        $expenseQuery = DB::table('m_expense as expenses')
+            ->leftJoin('exp_cat as exp_categories', 'exp_categories.id', '=', 'expenses.exp_cat')
+            ->where('expenses.c_by', $emp_id)
+            ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
+                return $query->whereBetween('expenses.created_at', [$startDate, $endDate]);
+            })
+            ->select([
+                DB::raw("'expense' as source"),
+                'expenses.id',
+                'expenses.amount',
+                'expenses.status',
+                'expenses.created_at',
+                'exp_categories.cat as category',
+                'notes'
+                
+            ]);
 
-        $exp_balance = ($exp_approve->where('status', 'approved')->sum('amount') - $exp_transaction->sum('amount'));
+        // ✅ 4. Expense transactions
+        $transactionQuery = DB::table('e_expense')
+            ->where('emp_id', $emp_id)
+            ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
+                return $query->whereBetween('created_at', [$startDate, $endDate]);
+            })
+            ->select([
+                DB::raw("'e_expense' as source"),
+                'id',
+                'amount',
+                DB::raw("'completed' as status"),
+                'created_at',
+                DB::raw('NULL as category'),
+                DB::raw('NULL as notes')
+                
+            ]);
 
-        $exp_pending = $exp_approve->where('status', 'pending')->sum('amount');
+        // ✅ 5. UNION
+        $union = $expenseQuery->unionAll($transactionQuery);
 
-        $exp_data = $exp_approve->concat($exp_transaction)->sortByDesc('created_at')->values();
+        // ✅ 6. Cursor pagination (REAL DB LEVEL)
+        $transactions = DB::query()
+            ->fromSub($union, 'exp_data')
+            ->orderByDesc('created_at')
+            ->cursorPaginate(15);
 
-        $exp_out = $exp_transaction->sum('amount');
+        // \Log::info("Expense transactions fetched for emp_id: $emp_id, count: " . count($transactions->items()) . ", next_cursor: " . optional($transactions->nextCursor())->encode());
 
         return [
             'user_profile' => $user_profile,
             'exp_balance' => $exp_balance,
             'exp_pending' => $exp_pending,
-            'exp_transaction' => $exp_data,
+            'exp_transaction' => $transactions->items(),
+            'next_cursor' => optional($transactions->nextCursor())->encode()
         ];
-
     }
 }

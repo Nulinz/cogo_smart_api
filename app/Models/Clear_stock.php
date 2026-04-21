@@ -26,6 +26,7 @@ class Clear_stock extends Model
         return date('d-m-Y H:i:s', strtotime($value));
     }
 
+
     public function product_data()
     {
         return $this->belongsTo(Product::class, 'product_id', 'id');

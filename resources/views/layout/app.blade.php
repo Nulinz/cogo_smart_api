@@ -148,50 +148,136 @@
             }
         }
 
-        function checkPasswordMatch() {
-            const pass = document.getElementById('new_password').value;
-            const conf = document.getElementById('confirm_password').value;
-            const saveBtn = document.getElementById('addClientSave');
+        // function checkPasswordMatch() {
+        //     const pass = document.getElementById('new_password').value;
+        //     const conf = document.getElementById('confirm_password').value;
+        //     const saveBtn = document.getElementById('addClientSave');
 
-            const errorDiv = document.getElementById('passwordError');
-            const rulesDiv = document.getElementById('passwordRulesError');
+        //     const errorDiv = document.getElementById('passwordError');
+        //     const rulesDiv = document.getElementById('passwordRulesError');
 
-            // Password rules
-            const hasUppercase = /[A-Z]/.test(pass);
-            const hasNumber = /\d/.test(pass);
-            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
-            const hasMinLength = pass.length >= 8;
+        //     // Password rules
+        //     const hasUppercase = /[A-Z]/.test(pass);
+        //     const hasNumber = /\d/.test(pass);
+        //     const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+        //     const hasMinLength = pass.length >= 8;
 
-            let isValid = true; // ✅ DEFINE isValid
+        //     let isValid = true; // ✅ DEFINE isValid
 
-            /* Password rule validation */
-            if (pass && (!hasUppercase || !hasNumber || !hasSpecial || !hasMinLength)) {
-                rulesDiv.innerHTML =
-                    'Password must contain:<br>' +
-                    '• Minimum 8 characters<br>' +
-                    '• One uppercase letter<br>' +
-                    '• One number<br>' +
-                    '• One special character';
-                rulesDiv.style.display = 'block';
-                isValid = false;
-            } else {
-                rulesDiv.style.display = 'none';
-            }
+        //     /* Password rule validation */
+        //     if (pass && (!hasUppercase || !hasNumber || !hasSpecial || !hasMinLength)) {
+        //         rulesDiv.innerHTML =
+        //             'Password must contain:<br>' +
+        //             '• Minimum 8 characters<br>' +
+        //             '• One uppercase letter<br>' +
+        //             '• One number<br>' +
+        //             '• One special character';
+        //         rulesDiv.style.display = 'block';
+        //         isValid = false;
+        //     } else {
+        //         rulesDiv.style.display = 'none';
+        //     }
 
-            /* Password match validation */
-            if (pass && conf && pass !== conf) {
-                errorDiv.textContent = 'Passwords do not match!';
-                errorDiv.style.display = 'block';
-                isValid = false;
-            } else {
-                errorDiv.style.display = 'none';
-            }
+        //     /* Password match validation */
+        //     if (pass && conf && pass !== conf) {
+        //         errorDiv.textContent = 'Passwords do not match!';
+        //         errorDiv.style.display = 'block';
+        //         isValid = false;
+        //     } else {
+        //         errorDiv.style.display = 'none';
+        //     }
 
-            /* Enable / Disable button */
-            saveBtn.disabled = !isValid || !pass || !conf;
+        //     /* Enable / Disable button */
+        //     saveBtn.disabled = !isValid || !pass || !conf;
 
-            return isValid;
-        }
+        //     return isValid;
+        // }
+
+                let userStartedTyping = false;
+
+                $('#add_password').on('keydown', function() {
+                    userStartedTyping = true;
+                });
+
+                // $(document).on('input', '#change_password', function() {
+
+                //     if (!userStartedTyping) return;
+
+                //     var $input = $(this); // ✅ store reference
+                //     var old_password = $input.val();
+                  
+                //     // console.log('Old Password:', old_password); // ✅ log the value
+
+                //     var auth_user_password = "{{ Auth::user()->password }}";
+                //     // console.log('Auth User Password:', auth_user_password); // ✅ log the auth user's password
+
+                //     if(old_password.length > auth_user_password.length) {
+                //         $('#addClientSave').prop('disabled', true);
+                //         return;
+                //     }
+
+                //     if (old_password == auth_user_password) {
+                //          $('#addClientSave').prop('disabled', false);
+                //     }else{
+
+                //         $('#addClientSave').prop('disabled', true);
+                //     }
+
+                //     // $.ajax({
+                //     //     url: "{{ route('user.password.change') }}",
+                //     //     method: 'POST',
+                //     //     data: {
+                //     //         _token: "{{ csrf_token() }}",
+                //     //         old_password: old_password,
+                //     //         // user_id: user_id // ✅ send user id
+                //     //     },
+                //     //     success: function(response) {
+
+                //     //         if (response.val==false) {
+                //     //             alert('This old Password is incorrect.');
+
+                //     //             // $input.val(''); // ✅ works now
+                //     //             $('#addClientSave').prop('disabled', true);
+
+                //     //         } else {
+                //     //             $('#addClientSave').prop('disabled', false);
+                //     //         }
+
+                //     //     },
+                //     //     // error: function(xhr) {
+                //     //     //     alert('error');
+                //     //     // }
+                //     // });
+                // });
+
+                $(document).on('input', '#add_password, #add_conf_password', function() {
+
+                    if (!userStartedTyping) return;
+
+                    var password = $('#add_password').val();
+                    var confirmPassword = $('#add_conf_password').val();
+
+                    if ((password !== '' || confirmPassword !== '') && (confirmPassword.length > 0) ) {
+
+                        //  console.log('Password:', password, 'Confirm Password:', confirmPassword);
+
+                        // console.log('Password:', password, 'Confirm Password:', confirmPassword); // Debugging log
+
+                        if (password !== confirmPassword) {
+
+                            $('#pass_error_ch').removeClass('d-none');
+                            $('#addClientSave').prop('disabled', true);
+
+                        } else {
+
+                            $('#pass_error_ch').addClass('d-none');
+                            $('#addClientSave').prop('disabled', false);
+                        }
+                    }
+
+                });
+
+
     </script>
 
 </body>
